@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            color: black;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: #4caf50;
+            color: #ffffff;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .content h2 {
+            color: #333333;
+        }
+
+        .content p {
+            margin: 5px 0;
+        }
+
+        .products {
+            margin-top: 20px;
+        }
+
+        .product {
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 10px 0;
+        }
+
+        .product img {
+            width: 80px;
+            height: 80px;
+            margin-right: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .product-details {
+            flex: 1;
+        }
+
+        .product-details h4 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .product-details p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .total {
+            margin-top: 20px;
+            font-size: 18px;
+            text-align: right;
+        }
+
+        .total p {
+            margin: 5px 0;
+        }
+
+        .total p strong {
+            font-size: 20px;
+            color: black;
+        }
+
+        .total .grand-total {
+            color: #ff0000;
+            font-weight: bold;
+            font-size: 22px;
+        }
+
+        .footer {
+            background-color: #f1f1f1;
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #777;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>Xác Nhận Đơn Hàng</h1>
+        </div>
+        <div class="content">
+            <h2>Xin chào {{order.shippingInfo.name}},</h2>
+            <p>Cảm ơn bạn đã đặt hàng! Dưới đây là thông tin chi tiết:</p>
+            <div class="shipping-info">
+                <h3>Thông tin giao hàng:</h3>
+                <p><strong>Người nhận:</strong> {{order.shippingInfo.name}}</p>
+                <p>
+                    <strong>Số điện thoại:</strong> {{order.shippingInfo.phoneNumber}}
+                </p>
+                <p>
+                    <strong>Địa chỉ:</strong> {{order.shippingInfo.detailedAddress}},
+                    {{order.shippingInfo.ward}}, {{order.shippingInfo.district}},
+                    {{order.shippingInfo.city}}
+                </p>
+                <p>
+                    <strong>Thời gian đặt hàng:</strong> {{order.createdAtFormatted}}
+                </p>
+            </div>
+            <div class="products">
+                <h3>Sản phẩm:</h3>
+                <table style="
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 10px;
+              text-align: left;
+            ">
+                    <thead>
+                        <tr style="background-color: #f4f4f4">
+                            <th style="padding: 8px; border: 1px solid #ddd">Ảnh</th>
+                            <th style="padding: 8px; border: 1px solid #ddd">
+                                Tên sản phẩm
+                            </th>
+                            <th style="padding: 8px; border: 1px solid #ddd">Số lượng</th>
+                            <th style="padding: 8px; border: 1px solid #ddd">
+                                Đơn giá (VND)
+                            </th>
+                            <th style="padding: 8px; border: 1px solid #ddd">
+                                Giá tiền (VND)
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each order.products}}
+                        <tr>
+                            <td style="
+                    padding: 8px;
+                    border: 1px solid #ddd;
+                    text-align: center;
+                  ">
+                                <img src="{{this.product.imageUrl.[0]}}" alt="{{this.product.name}}" style="
+                      width: 80px;
+                      height: 80px;
+                      border: 1px solid #ddd;
+                      border-radius: 5px;
+                    " />
+                            </td>
+                            <td style="padding: 8px; border: 1px solid #ddd">
+                                <div style="font-size: 16px; font-weight: bold; color: #333">
+                                    {{this.product.name}}
+                                </div>
+                                <div style="font-size: 14px; color: #777">
+                                    ({{this.product.color}})
+                                </div>
+                            </td>
+                            <td style="padding: 8px; border: 1px solid #ddd">
+                                {{this.quantity}}
+                            </td>
+                            <td style="padding: 8px; border: 1px solid #ddd">
+                                {{this.priceFormatted}}
+                            </td>
+                            <td style="padding: 8px; border: 1px solid #ddd">
+                                {{this.totalPriceFormatted}}
+                            </td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+            <div class="total">
+                <p>
+                    <strong>Tạm tính:</strong>
+                    <span>{{order.subTotalFormatted}} VND</span>
+                </p>
+                <p>
+                    <strong>Phí giao hàng:</strong>
+                    <span>{{order.shippingPriceFormatted}} VND</span>
+                </p>
+                <p>
+                    <strong>Tổng cộng:</strong>
+                    <span style="color: #ff0000; font-weight: bold">{{order.totalPriceFormatted}} VND</span>
+                </p>
+            </div>
+        </div>
+        <div class="footer">
+            <p>
+                Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ chúng tôi tại
+                tunguyen@gmail.com
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>
