@@ -17,6 +17,14 @@ const tokenService = {
         )
     },
 
+    verifyAccessToken: (token) => {
+        try {
+            return jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+        } catch (err) {
+            return null;
+        }
+    },
+
     validateRefreshToken: (refreshToken) => {
         try {
             return jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);

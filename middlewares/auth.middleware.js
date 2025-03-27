@@ -1,9 +1,10 @@
-import User from "../model/user.model.js";
-import jwt from "jsonwebtoken";
+import User from "../models/user.model.js";
+import tokenService from "../services/token.service.js";
 
 const authMiddleware = {
     protect: async (req, res, next) => {
         try {
+            // Get token
             let token;
             if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
                 token = req.headers.authorization.split(' ')[1];
@@ -11,31 +12,44 @@ const authMiddleware = {
 
             if (!token) {
                 return res.status(401).json({
-                    status: 'fail',
-                    message: 'You are not logged in! Please log in to get access'
+                    success: false,
+                    message: 'Please login to access this resource'
                 });
             }
 
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            // Verify token
+            const decoded = tokenService.verifyAccessToken(token);
+            if (!decoded) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Invalid or expired token'
+                });
+            }
+
+            // Check if user exists
             const currentUser = await User.findById(decoded.id);
             if (!currentUser) {
                 return res.status(401).json({
-                    status: 'fail',
-                    message: 'The user belonging to this token does no longer exist'
+                    success: false,
+                    message: 'User not found'
                 });
             }
+
+            // Check if password changed after token issued
             if (currentUser.changedPasswordAfter(decoded.iat)) {
                 return res.status(401).json({
-                    status: 'fail',
-                    message: 'User recently changed password! Please log in again'
+                    success: false,
+                    message: 'Password recently changed, please login again'
                 });
             }
+
+            // Grant access
             req.user = currentUser;
             next();
         } catch (error) {
             res.status(400).json({
-                status: 'fail',
-                message: error
+                success: false,
+                message: error.message
             });
         }
     },
@@ -44,7 +58,7 @@ const authMiddleware = {
         return (req, res, next) => {
             if (!roles.includes(req.user.role)) {
                 return res.status(403).json({
-                    status: 'fail',
+                    success: false,
                     message: 'You do not have permission to perform this action'
                 });
             }

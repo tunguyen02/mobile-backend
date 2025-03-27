@@ -49,3 +49,54 @@ export const sendCreateOrderEmail = async (order, email) => {
 
     await transporter.sendMail(mailOptions);
 };
+
+export const sendResetPasswordEmail = async (user, resetToken) => {
+    const sourceHtml = fs.readFileSync(path.resolve(__dirname, "../templateEmails/resetPassword.html"), { encoding: "utf8" });
+
+    const template = handlebars.compile(sourceHtml);
+
+    // Tạo URL đặt lại mật khẩu với token
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    const context = {
+        name: user.name || user.email,
+        resetUrl: resetUrl
+    };
+
+    const resetPasswordHtml = template(context);
+
+    const mailOptions = {
+        from: process.env.MAIL_ACCOUNT,
+        to: user.email,
+        subject: "Đặt lại mật khẩu",
+        text: `Nhấp vào đường dẫn sau để đặt lại mật khẩu: ${resetUrl}`,
+        html: resetPasswordHtml,
+    };
+
+    await transporter.sendMail(mailOptions);
+};
+
+export const sendPasswordChangedEmail = async (user) => {
+    const sourceHtml = fs.readFileSync(path.resolve(__dirname, "../templateEmails/passwordChanged.html"), { encoding: "utf8" });
+
+    const template = handlebars.compile(sourceHtml);
+
+    const now = new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+
+    const context = {
+        name: user.name || user.email,
+        time: now
+    };
+
+    const passwordChangedHtml = template(context);
+
+    const mailOptions = {
+        from: process.env.MAIL_ACCOUNT,
+        to: user.email,
+        subject: "Mật khẩu đã được thay đổi",
+        text: `Mật khẩu của tài khoản bạn đã được thay đổi thành công vào ${now}.`,
+        html: passwordChangedHtml,
+    };
+
+    await transporter.sendMail(mailOptions);
+};
