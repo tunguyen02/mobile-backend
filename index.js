@@ -15,7 +15,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
-        origin: process.env.CLIENT_URL,
+        origin: process.env.FRONTEND_URL,
         methods: ['GET', 'POST']
     }
 });
@@ -23,7 +23,7 @@ const io = new Server(httpServer, {
 app.use(morgan('dev'));
 
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: process.env.FRONTEND_URL,
     credentials: true,
 }));
 

@@ -8,6 +8,7 @@ const paymentSchema = new mongoose.Schema({
     },
     paymentMethod: {
         type: String,
+        enum: ["COD", "VNPay"],
         required: true
     },
     amountPaid: {
@@ -19,12 +20,15 @@ const paymentSchema = new mongoose.Schema({
     },
     paymentStatus: {
         type: String,
-        enum: ["Pending", "Completed"],
+        enum: ["Pending", "Completed", "Failed"],
         required: true,
         default: "Pending"
     },
+    paymentDetails: {
+        type: Object
+    },
     paidAt: {
-        type: Date,
+        type: Date
     }
 }, {
     timestamps: true

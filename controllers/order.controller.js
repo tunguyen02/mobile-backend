@@ -12,6 +12,13 @@ const orderController = {
                 message: "Account not found"
             });
         }
+
+        if (!['COD', 'VNPay'].includes(paymentMethod)) {
+            return res.status(400).json({
+                message: "Invalid payment method"
+            });
+        }
+
         try {
             const newData = await orderService.createOrder(userId, shippingInfo, paymentMethod);
             try {
@@ -20,9 +27,10 @@ const orderController = {
             catch (error) {
                 console.log(error);
             }
-            if (paymentMethod === 'MoMo') {
+
+            if (paymentMethod === 'VNPay') {
                 return res.status(200).json({
-                    message: "Create order successfully, please pay with MoMo",
+                    message: "Create order successfully, please pay with VNPay",
                     paymentUrl: newData.paymentUrl,
                     ...newData
                 });

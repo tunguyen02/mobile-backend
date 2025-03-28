@@ -1,5 +1,9 @@
 import { sendCreateOrderEmail } from "../services/email.service.js";
 import orderService from "../services/order.service.js";
+import paymentService from "./payment.service.js";
+import mongoose from "mongoose";
+import cartService from "../services/cart.service.js";
+import Order from "../models/order.model.js";
 
 const orderController = {
     createOrder: async (req, res) => {
@@ -13,25 +17,71 @@ const orderController = {
             });
         }
         try {
-            const newData = await orderService.createOrder(userId, shippingInfo, paymentMethod);
+            const session = await mongoose.startSession();
+            session.startTransaction();
+
             try {
-                await sendCreateOrderEmail(newData.newOrder, email);
-            }
-            catch (error) {
-                console.log(error);
-            }
-            if (paymentMethod === 'MoMo') {
+                // Lấy giỏ hàng hiện tại
+                const cart = await cartService.getMyCart(userId);
+
+                if (!cart || cart.products.length === 0) {
+                    throw new Error("Cart is empty");
+                }
+
+                // Tạo đơn hàng mới
+                const newOrder = new Order({
+                    userId,
+                    products: cart.products.map(item => ({
+                        product: item.product._id,
+                        quantity: item.quantity,
+                        price: item.product.price
+                    })),
+                    shippingInfo,
+                    shippingStatus: "Pending"
+                });
+
+                // Lưu đơn hàng mới
+                await newOrder.save({ session });
+
+                // Xóa giỏ hàng
+                await cartService.clearCart(userId, session);
+
+                // Khởi tạo thanh toán
+                const paymentData = {
+                    paymentMethod,
+                    amountPaid: newOrder.totalPrice,
+                    paymentStatus: paymentMethod === "COD" ? "Pending" : "Pending"
+                };
+
+                const payment = await paymentService.createPayment(newOrder._id, paymentData, session);
+
+                await session.commitTransaction();
+                await session.endSession();
+
+                // Nếu thanh toán qua VNPay, tạo URL thanh toán
+                let paymentUrl = null;
+                if (paymentMethod === "VNPay") {
+                    paymentUrl = await paymentService.createVNPayUrl(newOrder);
+                }
+
+                try {
+                    await sendCreateOrderEmail(newOrder, email);
+                }
+                catch (error) {
+                    console.log(error);
+                }
+
                 return res.status(200).json({
-                    message: "Order created successfully, redirecting to MoMo payment",
-                    paymentUrl: newData.paymentUrl,
-                    ...newData
+                    message: "Order created successfully",
+                    paymentUrl: paymentUrl,
+                    ...newOrder.toObject()
                 });
             }
-
-            return res.status(200).json({
-                message: "Order created successfully",
-                ...newData
-            });
+            catch (error) {
+                await session.abortTransaction();
+                await session.endSession();
+                throw new Error(error.message);
+            }
         }
         catch (error) {
             console.error(error);
