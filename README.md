@@ -27,9 +27,6 @@ Backend API cho ứng dụng di động thương mại điện tử, xây dựng
 
 ### Đánh giá & Bình luận
 - Đánh giá sản phẩm (rating 1-5 sao)
-- Thêm hình ảnh vào đánh giá
-- Liệt kê ưu/nhược điểm của sản phẩm
-- Phản hồi đánh giá
 
 ### Chat & Hỗ trợ
 - Chat realtime giữa người dùng và quản trị viên
@@ -37,10 +34,6 @@ Backend API cho ứng dụng di động thương mại điện tử, xây dựng
 - Đánh dấu tin nhắn đã đọc
 - Thông báo tin nhắn mới
 
-### Quản lý kho
-- Theo dõi số lượng sản phẩm
-- Tự động cập nhật khi đặt/hủy đơn hàng
-- Cảnh báo hàng tồn kho thấp
 
 ### Báo cáo & Xuất dữ liệu
 - Xuất báo cáo CSV
@@ -52,7 +45,7 @@ Backend API cho ứng dụng di động thương mại điện tử, xây dựng
 ```
 ├── config/             # Cấu hình dự án
 ├── controllers/        # Xử lý logic điều hướng API
-├── middlewares/        # Middleware (auth, upload, error handling)
+├── middlewares/        # Middleware (auth)
 ├── models/             # Schema và model Mongoose
 ├── routes/             # Định nghĩa API routes
 ├── services/           # Xử lý logic nghiệp vụ
@@ -92,7 +85,19 @@ npm install
 ```
 
 3. Tạo file .env như file .env.example
-```
+```bash
+MONGODB_URI=
+PORT=
+JWT_SECRET=
+JWT_ACCESS_SECRET=
+JWT_REFRESH_SECRET=
+JWT_ACCESS_EXPIRES_IN=
+JWT_REFRESH_EXPIRES_IN=
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+EMAIL_USERNAME=
+EMAIL_PASSWORD=
 ```
 
 4. Khởi chạy server:
@@ -141,5 +146,5 @@ npm run dev
 
 ## Liên hệ
 
-Nguyễn Đình Tú - tunguyen@gmail.com
+Nguyễn Đình Tú - tu700131@gmail.com
 
