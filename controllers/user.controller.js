@@ -46,7 +46,7 @@ const userController = {
         }
     },
 
-    getUserInfomations: async (req, res) => {
+    getUserInformation: async (req, res) => {
         const userId = req?.user?._id;
         if (!userId) {
             return res.status(401).json({
@@ -56,11 +56,11 @@ const userController = {
         }
 
         try {
-            const user = await userService.getUserInformations(userId);
+            const user = await userService.getUserInformation(userId);
             return res.status(200).json({
                 success: true,
                 message: 'User information retrieved successfully',
-                data: user
+                user
             });
         } catch (error) {
             return res.status(400).json({
@@ -72,11 +72,7 @@ const userController = {
 
     signOut: async (req, res) => {
         try {
-            res.clearCookie('refresh_token', {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'Strict'
-            });
+            res.clearCookie('refresh_token');
 
             res.status(200).json({
                 success: true,
@@ -114,7 +110,7 @@ const userController = {
             return res.status(200).json({
                 success: true,
                 message: 'Avatar updated successfully',
-                data: { avatarUrl }
+                avatarUrl: avatarUrl
             });
         } catch (error) {
             return res.status(400).json({
@@ -147,10 +143,31 @@ const userController = {
             return res.status(200).json({
                 success: true,
                 message: 'Profile updated successfully',
-                data: updatedUser
+                user: updatedUser
             });
         } catch (error) {
             return res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+    },
+    refreshAccessToken: async (req, res) => {
+        try {
+            const refreshToken = req.cookies.refresh_token;
+
+            if (!refreshToken) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Refresh token not found'
+                });
+            }
+
+            const newAccessToken = await userService.refreshAccessToken(refreshToken);
+
+            return res.status(200).json(newAccessToken);
+        } catch (error) {
+            res.status(401).json({
                 success: false,
                 message: error.message
             });
@@ -278,6 +295,75 @@ const userController = {
         } catch (error) {
             return res.status(400).json({
                 success: false,
+                message: error.message
+            });
+        }
+    },
+
+    getAllUsers: async (req, res) => {
+        try {
+            const { users, countUser } = await userService.getAllUsers();
+            res.status(200).json({
+                message: "Get all users successfully",
+                data: users,
+                countUser: countUser
+            });
+        } catch (error) {
+            res.status(400).json({
+                message: error.message
+            });
+        }
+    },
+
+    getUserById: async (req, res) => {
+        const { userId } = req.params;
+        if (!userId) return res.status(404).json({
+            message: 'UserId invalid'
+        })
+
+        try {
+            const user = await userService.getUserById(userId);
+            return res.status(200).json({
+                message: 'Get user by id successfully',
+                data: user
+            });
+        }
+        catch (error) {
+            return res.status(400).json({
+                message: error.message
+            });
+        }
+    },
+
+    deleteUser: async (req, res) => {
+        const { userId } = req.params;
+        if (!userId) return res.status(404).json({
+            message: 'UserId invalid'
+        })
+
+        try {
+            await userService.deleteUser(userId);
+            return res.status(200).json({
+                message: 'Delete user successfully'
+            });
+        }
+        catch (error) {
+            return res.status(400).json({
+                message: error.message
+            });
+        }
+    },
+
+    countTotalUsers: async (req, res) => {
+        try {
+            const totalUsers = await userService.countTotalUsers();
+            return res.status(200).json({
+                success: true,
+                totalUsers: totalUsers
+            });
+        }
+        catch (error) {
+            return res.status(400).json({
                 message: error.message
             });
         }

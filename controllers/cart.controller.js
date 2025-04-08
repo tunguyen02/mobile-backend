@@ -3,7 +3,7 @@ import productService from "../services/product.service.js";
 
 const cartController = {
     getMyCart: async (req, res) => {
-        const userId = req.user.id;
+        const userId = req?.user?._id;
         if (!userId) {
             return res.status(401).json({
                 message: "Please login"
@@ -26,7 +26,7 @@ const cartController = {
     },
 
     updateProduct: async (req, res) => {
-        const userId = req.user.id;
+        const userId = req?.user?._id;
         const { productId, quantity } = req.body;
 
         if (!userId) {
@@ -64,7 +64,7 @@ const cartController = {
     },
 
     addProductToCart: async (req, res) => {
-        const userId = req.user.id;
+        const userId = req?.user?._id;
         const { productId } = req.body;
 
         if (!userId) {

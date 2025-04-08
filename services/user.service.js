@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import crypto from 'crypto';
 import { sendResetPasswordEmail, sendPasswordChangedEmail } from './email.service.js';
+import tokenService from './token.service.js';
 
 const userService = {
     signup: async (name, email, password, passwordConfirm) => {
@@ -29,11 +30,7 @@ const userService = {
                 passwordConfirm
             });
 
-            return {
-                _id: newUser._id,
-                email: newUser.email,
-                role: newUser.role
-            };
+            return newUser;
         } catch (error) {
             throw new Error(error.message);
         }
@@ -51,15 +48,15 @@ const userService = {
             }
 
             return {
-                _id: user._id,
-                email: user.email,
-                role: user.role
+                _id: user?._id,
+                email: user?.email,
+                role: user?.role
             };
         } catch (error) {
             throw new Error(error.message);
         }
     },
-    getUserInformations: async (userId) => {
+    getUserInformation: async (userId) => {
         try {
             if (!mongoose.Types.ObjectId.isValid(userId)) {
                 throw new Error("Invalid userId");
@@ -102,9 +99,9 @@ const userService = {
                 throw new Error("User not found");
             }
 
-            return {
-                avatarUrl: user.avatarUrl
-            };
+            // return {
+            //     avatarUrl: user.avatarUrl
+            // };
         } catch (error) {
             throw new Error(error.message);
         }
@@ -141,6 +138,21 @@ const userService = {
             };
         } catch (error) {
             throw new Error(error.message);
+        }
+    },
+    refreshAccessToken: async (refreshToken) => {
+        try {
+            const decoded = tokenService.validateRefreshToken(refreshToken);
+            if (!decoded) throw new Error('Invalid refresh token');
+
+            const user = await User.findById(decoded.id);
+            if (!user) throw new Error('User not found');
+
+            const newAccessToken = tokenService.generateAccessToken(user);
+
+            return { accessToken: newAccessToken };
+        } catch (error) {
+            throw new Error('Token refresh failed: ' + error.message);
         }
     },
     forgotPassword: async (email) => {
@@ -229,6 +241,61 @@ const userService = {
             await sendPasswordChangedEmail(user);
 
             return { message: 'Password reset successfully' };
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    },
+
+    getAllUsers: async () => {
+        try {
+            const users = await User.find();
+            const countUser = await User.countDocuments();
+            return { users, countUser };
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    },
+
+    getUserById: async (userId) => {
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            throw new Error("UserId invalid");
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        return {
+            email: user.email,
+            name: user.name,
+            phoneNumber: user.phoneNumber,
+            address: user.address,
+            avatarUrl: user.avatarUrl,
+            role: user.role
+        }
+    },
+
+    deleteUser: async (userId) => {
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            throw new Error("UserId invalid");
+        }
+
+        try {
+            const user = await User.findByIdAndDelete(userId);
+            if (!user) {
+                throw new Error("User not found");
+            }
+        }
+        catch (error) {
+            throw new Error(error.message);
+        }
+    },
+
+    countTotalUsers: async () => {
+        try {
+            const totalUsers = await User.countDocuments();
+            return totalUsers;
         } catch (error) {
             throw new Error(error.message);
         }
