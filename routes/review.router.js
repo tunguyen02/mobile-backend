@@ -8,5 +8,8 @@ ReviewRouter.post('/create', authMiddleware.protect, reviewController.createRevi
 ReviewRouter.get('/product/:productId', reviewController.getProductReviews);
 ReviewRouter.put('/update/:id', authMiddleware.protect, reviewController.updateReview);
 ReviewRouter.delete('/delete/:id', authMiddleware.protect, reviewController.deleteReview);
+ReviewRouter.get('/check', authMiddleware.protect, reviewController.checkReviewStatus);
+ReviewRouter.get('/user-can-review', authMiddleware.protect, reviewController.checkUserCanReview);
+ReviewRouter.get('/user-product/:productId', authMiddleware.protect, reviewController.getUserProductReview);
 
 export default ReviewRouter; 

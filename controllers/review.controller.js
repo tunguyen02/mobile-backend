@@ -86,6 +86,67 @@ const reviewController = {
                 message: error.message
             });
         }
+    },
+    
+    checkReviewStatus: async (req, res) => {
+        try {
+            const { productId, orderId } = req.query;
+            const hasReviewed = await reviewService.checkReviewStatus(
+                req.user._id,
+                productId,
+                orderId
+            );
+
+            res.status(200).json({
+                success: true,
+                hasReviewed
+            });
+        } catch (error) {
+            res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+    },
+    
+    checkUserCanReview: async (req, res) => {
+        try {
+            const { productId } = req.query;
+            const result = await reviewService.checkUserCanReview(
+                req.user._id,
+                productId
+            );
+
+            res.status(200).json({
+                success: true,
+                ...result
+            });
+        } catch (error) {
+            res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+    },
+    
+    getUserProductReview: async (req, res) => {
+        try {
+            const { productId } = req.params;
+            const review = await reviewService.getUserProductReview(
+                req.user._id,
+                productId
+            );
+
+            res.status(200).json({
+                success: true,
+                data: review
+            });
+        } catch (error) {
+            res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
     }
 };
 
