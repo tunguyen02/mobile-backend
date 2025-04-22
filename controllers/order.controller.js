@@ -5,6 +5,7 @@ const orderController = {
     createOrder: async (req, res) => {
         const userId = req.user.id;
         const email = req.user.email;
+
         const { shippingInfo, paymentMethod } = req.body;
 
         if (!userId) {
@@ -21,11 +22,18 @@ const orderController = {
 
         try {
             const newData = await orderService.createOrder(userId, shippingInfo, paymentMethod);
+
+            // Gửi email xác nhận đơn hàng
             try {
+                console.log('Sending order confirmation email for order:', newData.newOrder._id);
+                console.log('Order products:', JSON.stringify(newData.newOrder.products, null, 2));
+                console.log('Customer email:', email);
                 await sendCreateOrderEmail(newData.newOrder, email);
-            }
-            catch (error) {
-                console.log(error);
+                console.log('Order confirmation email sent successfully');
+            } catch (emailError) {
+                console.error('Failed to send order confirmation email:', emailError);
+                // Không trả về lỗi cho client vì đơn hàng đã được tạo thành công
+                // Chỉ log lỗi để theo dõi
             }
 
             if (paymentMethod === 'VNPay') {
@@ -42,7 +50,7 @@ const orderController = {
             });
         }
         catch (error) {
-            console.error(error);
+            console.error('Create order error:', error);
             return res.status(500).json({
                 message: "Create order failed",
                 error: error.message
@@ -69,7 +77,7 @@ const orderController = {
             const data = await orderService.getAllOrders();
 
             return res.status(200).json({
-                message: "Get all orders successfully",
+                message: 'Lấy thông tin các đơn hàng thành công',
                 data
             })
         }
@@ -85,13 +93,13 @@ const orderController = {
 
         if (!userId) {
             return res.status(401).json({
-                message: "Account not found"
+                message: 'Tài khoản không tồn tại'
             })
         }
 
         if (!orderId) {
             return res.status(400).json({
-                message: "Id of order not found"
+                message: "Id của đơn hàng không tồn tại"
             })
         }
 
@@ -100,12 +108,12 @@ const orderController = {
 
             if (!data) {
                 return res.status(404).json({
-                    message: "Not found order"
+                    message: "Thông tin đơn hàng không tồn tại"
                 })
             }
 
             return res.status(200).json({
-                message: "Get order details successfully",
+                message: "Lấy thông tin đơn hàng thành công",
                 ...data
             })
         }
@@ -120,7 +128,7 @@ const orderController = {
 
         if (!orderId) {
             return res.status(400).json({
-                message: "Id of order not found"
+                message: "Id của đơn hàng không tồn tại"
             })
         }
 
@@ -128,7 +136,7 @@ const orderController = {
             await orderService.changeOrderStatus(orderId, req.body);
 
             return res.status(200).json({
-                message: "Change order status successfully"
+                message: "Cập nhật trạng thái đơn hàng thành công"
             })
         }
         catch (error) {
@@ -141,7 +149,7 @@ const orderController = {
         const orderId = req.params.orderId;
         if (!orderId) {
             return res.status(400).json({
-                message: "Id of order not found"
+                message: "Id của đơn hàng không tồn tại"
             })
         }
 
@@ -149,7 +157,7 @@ const orderController = {
             await orderService.deleteOrder(orderId);
 
             return res.status(200).json({
-                message: "Delete order successfully"
+                message: "Xóa đơn hàng thành công"
             })
         }
         catch (error) {
@@ -162,7 +170,7 @@ const orderController = {
         const userId = req.user.id;
         if (!userId) {
             return res.status(401).json({
-                message: "Account not found"
+                message: 'Tài khoản không tồn tại'
             })
         }
 
@@ -170,7 +178,7 @@ const orderController = {
             const orders = await orderService.getMyOrders(userId);
 
             return res.status(200).json({
-                message: "Get my orders successfully",
+                message: "Lấy thông tin đơn hàng của tôi thành công",
                 orders
             })
         }

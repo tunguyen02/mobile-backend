@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import User from "../models/user.model.js";
 import crypto from 'crypto';
 import { sendResetPasswordEmail, sendPasswordChangedEmail } from './email.service.js';

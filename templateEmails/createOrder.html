@@ -166,9 +166,11 @@
                     border: 1px solid #ddd;
                     text-align: center;
                   ">
-                                <img src="{{this.product.imageUrl.[0]}}" alt="{{this.product.name}}" style="
+                                <img src="https://via.placeholder.com/80x80.png?text=Mobile" alt="{{this.product.name}}"
+                                    style="
                       width: 80px;
                       height: 80px;
+                      object-fit: cover;
                       border: 1px solid #ddd;
                       border-radius: 5px;
                     " />
@@ -177,9 +179,11 @@
                                 <div style="font-size: 16px; font-weight: bold; color: #333">
                                     {{this.product.name}}
                                 </div>
+                                {{#if this.product.color}}
                                 <div style="font-size: 14px; color: #777">
                                     ({{this.product.color}})
                                 </div>
+                                {{/if}}
                             </td>
                             <td style="padding: 8px; border: 1px solid #ddd">
                                 {{this.quantity}}

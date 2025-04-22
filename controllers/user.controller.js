@@ -1,5 +1,6 @@
 import tokenService from '../services/token.service.js';
 import userService from '../services/user.service.js';
+import cloudinaryServices from '../services/cloudinary.service.js';
 
 const userController = {
     signup: async (req, res) => {
@@ -58,9 +59,9 @@ const userController = {
         try {
             const user = await userService.getUserInformation(userId);
             return res.status(200).json({
+                user,
                 success: true,
                 message: 'User information retrieved successfully',
-                user
             });
         } catch (error) {
             return res.status(400).json({

@@ -1,11 +1,12 @@
 import { Router } from "express";
 import productDetailController from "../controllers/productDetails.controller.js";
+import authMiddleware from "../middlewares/auth.middleware.js";
 
 const ProductDetailRouter = Router();
 
-ProductDetailRouter.post('/create', productDetailController.createProductDetail);
 ProductDetailRouter.get('/:productId', productDetailController.getProductDetail);
-ProductDetailRouter.patch('/update/:productId', productDetailController.updateProductDetail);
-ProductDetailRouter.delete('/delete/:productId', productDetailController.deleteProductDetail);
+ProductDetailRouter.post('/create', authMiddleware.protect, productDetailController.createProductDetail);
+ProductDetailRouter.patch('/update/:productId', authMiddleware.protect, productDetailController.updateProductDetail);
+ProductDetailRouter.delete('/delete/:productId', authMiddleware.protect, productDetailController.deleteProductDetail);
 
 export default ProductDetailRouter;

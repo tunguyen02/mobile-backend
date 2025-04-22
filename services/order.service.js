@@ -1,228 +1,197 @@
-import { sendCreateOrderEmail } from "../services/email.service.js";
-import orderService from "../services/order.service.js";
-import paymentService from "./payment.service.js";
 import mongoose from "mongoose";
-import cartService from "../services/cart.service.js";
 import Order from "../models/order.model.js";
+import cartService from "./cart.service.js";
+import paymentService from "./payment.service.js";
+import Payment from "../models/payment.model.js";
 
-const orderController = {
-    createOrder: async (req, res) => {
-        const userId = req.user.id;
-        const email = req.user.email;
-        const { shippingInfo, paymentMethod } = req.body;
-
-        if (!userId) {
-            return res.status(401).json({
-                message: "Account does not exist"
-            });
-        }
+const orderService = {
+    createOrder: async (userId, shippingInfo, paymentMethod) => {
+        const session = await mongoose.startSession();
+        session.startTransaction();
         try {
-            const session = await mongoose.startSession();
-            session.startTransaction();
+            // Get current cart
+            const cart = await cartService.getMyCart(userId);
 
-            try {
-                // Lấy giỏ hàng hiện tại
-                const cart = await cartService.getMyCart(userId);
-
-                if (!cart || cart.products.length === 0) {
-                    throw new Error("Cart is empty");
-                }
-
-                // Tạo đơn hàng mới
-                const newOrder = new Order({
-                    userId,
-                    products: cart.products.map(item => ({
-                        product: item.product._id,
-                        quantity: item.quantity,
-                        price: item.product.price
-                    })),
-                    shippingInfo,
-                    shippingStatus: "Pending"
-                });
-
-                // Lưu đơn hàng mới
-                await newOrder.save({ session });
-
-                // Xóa giỏ hàng
-                await cartService.clearCart(userId, session);
-
-                // Khởi tạo thanh toán
-                const paymentData = {
-                    paymentMethod,
-                    amountPaid: newOrder.totalPrice,
-                    paymentStatus: paymentMethod === "COD" ? "Pending" : "Pending"
-                };
-
-                const payment = await paymentService.createPayment(newOrder._id, paymentData, session);
-
-                await session.commitTransaction();
-                await session.endSession();
-
-                // Nếu thanh toán qua VNPay, tạo URL thanh toán
-                let paymentUrl = null;
-                if (paymentMethod === "VNPay") {
-                    paymentUrl = await paymentService.createVNPayUrl(newOrder);
-                }
-
-                try {
-                    await sendCreateOrderEmail(newOrder, email);
-                }
-                catch (error) {
-                    console.log(error);
-                }
-
-                return res.status(200).json({
-                    message: "Order created successfully",
-                    paymentUrl: paymentUrl,
-                    ...newOrder.toObject()
-                });
+            if (!cart || cart.products.length === 0) {
+                throw new Error("Cart is empty");
             }
-            catch (error) {
-                await session.abortTransaction();
-                await session.endSession();
-                throw new Error(error.message);
+
+            // Create new order
+            const newOrder = new Order({
+                userId,
+                products: cart.products.map(item => ({
+                    product: item.product._id,
+                    quantity: item.quantity,
+                    price: item.product.price
+                })),
+                shippingInfo,
+                shippingStatus: "Pending"
+            });
+
+            // Save new order
+            await newOrder.save({ session });
+
+            // Clear cart
+            await cartService.clearCart(userId, session);
+
+            // Initialize payment
+            const paymentData = {
+                paymentMethod,
+                amountPaid: newOrder.totalPrice,
+                paymentStatus: paymentMethod === "COD" ? "Pending" : "Pending"
+            };
+
+            const payment = await paymentService.createPayment(newOrder._id, paymentData, session);
+
+            await session.commitTransaction();
+            await session.endSession();
+
+            // If payment via VNPay, create payment URL
+            let paymentUrl = null;
+            if (paymentMethod === "VNPay") {
+                paymentUrl = await paymentService.createVNPayUrl(newOrder);
             }
+
+            return {
+                newOrder: newOrder.toObject(),
+                paymentUrl
+            };
         }
         catch (error) {
-            console.error(error);
-            return res.status(500).json({
-                message: "Failed to create order",
-                error: error.message
-            });
+            await session.abortTransaction();
+            await session.endSession();
+            throw new Error(error.message);
         }
     },
 
-    countOrders: async (req, res) => {
+    countOrders: async () => {
         try {
-            const count = await orderService.countOrders();
-            return res.status(200).json({
-                count
-            });
+            return await Order.countDocuments();
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({
-                message: "Failed to get the number of orders",
-                error: error.message
-            });
+            throw new Error('Failed to count orders: ' + error.message);
         }
     },
-    getAllOrders: async (req, res) => {
+
+    getAllOrders: async () => {
         try {
-            const data = await orderService.getAllOrders();
+            const payments = await Payment.find().select('orderId paymentMethod paymentStatus');
 
-            return res.status(200).json({
-                message: "Get all orders successfully",
-                data
-            })
-        }
-        catch (error) {
-            return res.status(500).json({
-                message: "Failed to get order information",
-                error: error.message
-            })
+            const orders = await Order.find().select("userId shippingInfo.name totalPrice shippingStatus createdAt").populate("userId", "email").sort({ createdAt: -1 });
+
+            const paymentsMap = payments.reduce((map, payment) => {
+                map[payment.orderId] = payment;
+                return map;
+            }, {});
+
+            const ordersInfo = orders.map(order => ({
+                order,
+                payment: paymentsMap[order._id]
+            }));
+
+            return ordersInfo;
+        } catch (error) {
+            console.error("Error in getAllOrders:", error);
+            throw new Error("Lấy thông tin các đơn hàng thất bại");
         }
     },
-    getOrderDetails: async (req, res) => {
-        const userId = req.user.id;
-        const orderId = req.params.orderId;
-
-        if (!userId) {
-            return res.status(401).json({
-                message: "Account does not exist"
-            })
+    getOrderDetails: async (userId, orderId) => {
+        if (!mongoose.Types.ObjectId.isValid(orderId)) {
+            throw new Error("OrderId không hợp lệ")
         }
 
-        if (!orderId) {
-            return res.status(400).json({
-                message: "Id of the order does not exist"
-            })
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            throw new Error("UserId không hợp lệ");
         }
 
         try {
-            const data = await orderService.getOrderDetails(userId, orderId);
-
-            if (!data) {
-                return res.status(404).json({
-                    message: "Order not found"
-                })
+            const order = await Order.findOne({ userId, _id: orderId }).populate("products.product", "id name imageUrl color");
+            if (order.userId.toString() !== userId) {
+                throw new Error("Đơn hàng không phải của bạn");
             }
 
-            return res.status(200).json({
-                message: "Get order details successfully",
-                ...data
-            })
+            const payment = await Payment.findOne({ orderId });
+
+            return {
+                order,
+                payment
+            };
         }
         catch (error) {
-            return res.status(500).json({
-                message: error.message
-            })
+            throw new Error("Lấy thông tin đơn hàng thất bại");
         }
     },
-    changeOrderStatus: async (req, res) => {
-        const orderId = req.params.orderId;
 
-        if (!orderId) {
-            return res.status(400).json({
-                message: "Id of the order does not exist"
-            })
+    changeOrderStatus: async (orderId, data) => {
+        const { shippingStatus, paymentStatus } = data;
+
+        if (!mongoose.Types.ObjectId.isValid(orderId)) {
+            throw new Error("Orderid không hợp lệ");
+        }
+
+        if (!["Pending", "Shipping", "Completed"].includes(shippingStatus)) {
+            throw new Error("Trạng thái vận chuyển đơn hàng không hợp lệ");
+        }
+
+        if (!["Pending", "Completed"].includes(paymentStatus)) {
+            throw new Error("Trạng thái thanh toán đơn hàng không hợp lệ");
+        }
+
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            await Order.findByIdAndUpdate(orderId, { shippingStatus }, { session });
+
+            const payment = await Payment.findOne({ orderId });
+            payment.paymentStatus = paymentStatus;
+
+            await payment.save({ session });
+
+            await session.commitTransaction();
+            await session.endSession();
+        }
+        catch (error) {
+            await session.abortTransaction();
+            await session.endSession();
+            throw new Error("Cập nhật thông tin đơn hàng thất bại");
+        }
+    },
+
+    deleteOrder: async (orderId) => {
+        if (!mongoose.Types.ObjectId.isValid(orderId)) {
+            throw new Error("OrderId không hợp lệ");
+        }
+
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            await Payment.deleteOne({ orderId }, { session });
+
+            await Order.findByIdAndDelete(orderId, { session });
+
+            await session.commitTransaction();
+            await session.endSession();
+        }
+        catch (error) {
+            await session.abortTransaction();
+            await session.endSession();
+            throw new Error("Xóa đơn hàng thất bại");
+        }
+    },
+    getMyOrders: async (userId) => {
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            throw new Error("UserId không hợp lệ");
         }
 
         try {
-            await orderService.changeOrderStatus(orderId, req.body);
+            const orders = await Order.find({ userId }).populate("products.product", "id name imageUrl color")
+                .sort({ createdAt: -1 });
 
-            return res.status(200).json({
-                message: "Change order status successfully"
-            })
+            return orders;
         }
         catch (error) {
-            return res.status(500).json({
-                message: error.message
-            })
+            throw new Error("Lấy thông tin các đơn hàng thất bại");
         }
     },
-    deleteOrder: async (req, res) => {
-        const orderId = req.params.orderId;
-        if (!orderId) {
-            return res.status(400).json({
-                message: "Id of the order does not exist"
-            })
-        }
+};
 
-        try {
-            await orderService.deleteOrder(orderId);
-
-            return res.status(200).json({
-                message: "Delete order successfully"
-            })
-        }
-        catch (error) {
-            return res.status(500).json({
-                message: error.message
-            })
-        }
-    },
-    getMyOrders: async (req, res) => {
-        const userId = req.user.id;
-        if (!userId) {
-            return res.status(401).json({
-                message: "Account does not exist"
-            })
-        }
-
-        try {
-            const orders = await orderService.getMyOrders(userId);
-
-            return res.status(200).json({
-                message: "Get my orders successfully",
-                orders
-            })
-        }
-        catch (error) {
-            return res.status(500).json({
-                message: error.message
-            })
-        }
-    },
-}
-
-export default orderController;
+export default orderService;
