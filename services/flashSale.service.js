@@ -13,15 +13,25 @@ const flashSaleService = {
 
             // Validate products
             for (const item of products) {
-                const product = await Product.findById(item.product);
-                if (!product) {
-                    throw new Error(`Product ${item.product} not found`);
-                }
-                if (item.quantity > product.countInStock) {
-                    throw new Error(`Product ${product.name} has insufficient stock`);
+                console.log(`Validating product: ${item.product}`);
+                try {
+                    const product = await Product.findById(item.product);
+                    if (!product) {
+                        throw new Error(`Product ${item.product} not found`);
+                    }
+                    
+                    console.log(`Found product: ${product.name}, stock: ${product.countInStock}, requested: ${item.quantity}`);
+                    
+                    if (item.quantity > product.countInStock) {
+                        throw new Error(`Product ${product.name} has insufficient stock. Available: ${product.countInStock}, Requested: ${item.quantity}`);
+                    }
+                } catch (err) {
+                    console.error(`Error validating product ${item.product}:`, err);
+                    throw err;
                 }
             }
 
+            console.log('Creating flash sale in database');
             const flashSale = await FlashSale.create({
                 title,
                 startTime,
@@ -30,6 +40,18 @@ const flashSaleService = {
             });
 
             return flashSale;
+        } catch (error) {
+            console.error('Error in createFlashSale service:', error);
+            throw error;
+        }
+    },
+
+    getAllFlashSales: async () => {
+        try {
+            const flashSales = await FlashSale.find()
+                .populate('products.product', 'name price imageUrl');
+            
+            return flashSales;
         } catch (error) {
             throw new Error(error.message);
         }
