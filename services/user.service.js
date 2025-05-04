@@ -300,6 +300,20 @@ const userService = {
         } catch (error) {
             throw new Error(error.message);
         }
+    },
+
+    getAdminId: async () => {
+        try {
+            const admin = await User.findOne({ role: 'Admin' }).select('_id');
+            
+            if (!admin) {
+                throw new Error('Admin user not found');
+            }
+            
+            return admin._id;
+        } catch (error) {
+            throw new Error(error.message);
+        }
     }
 };
 

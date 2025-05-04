@@ -30,4 +30,7 @@ UserRouter.post('/auth/forgot-password', userController.forgotPassword);
 UserRouter.post('/auth/reset-password/:token', userController.resetPassword);
 UserRouter.post('/auth/change-password', authMiddleware.protect, userController.changePassword);
 
+// API lấy ID của Admin
+UserRouter.get('/admin-id', userController.getAdminId);
+
 export default UserRouter;

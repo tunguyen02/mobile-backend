@@ -20,6 +20,9 @@ const io = new Server(httpServer, {
     }
 });
 
+// Biến toàn cục để theo dõi người dùng đang kết nối
+app.locals.connectedUsers = new Map();
+
 app.use(morgan('dev'));
 
 app.use(cors({
@@ -31,9 +34,10 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Initialize socket
-chatSocket(io);
+// Initialize socket và chia sẻ biến connectedUsers
+chatSocket(io, app.locals.connectedUsers);
 
+// API routes
 routes(app);
 
 mongoose.connect(process.env.MONGODB_URI)

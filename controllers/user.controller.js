@@ -1,6 +1,7 @@
 import tokenService from '../services/token.service.js';
 import userService from '../services/user.service.js';
 import cloudinaryServices from '../services/cloudinary.service.js';
+import User from '../models/user.model.js';
 
 const userController = {
     signup: async (req, res) => {
@@ -365,6 +366,23 @@ const userController = {
         }
         catch (error) {
             return res.status(400).json({
+                message: error.message
+            });
+        }
+    },
+
+    getAdminId: async (req, res) => {
+        try {
+            const adminId = await userService.getAdminId();
+            
+            res.status(200).json({
+                success: true,
+                adminId: adminId
+            });
+        } catch (error) {
+            console.error('Error getting admin ID:', error);
+            res.status(error.message === 'Admin user not found' ? 404 : 500).json({
+                success: false,
                 message: error.message
             });
         }
