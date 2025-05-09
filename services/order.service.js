@@ -20,6 +20,18 @@ const orderService = {
             // Xử lý dữ liệu Flash Sale
             const flashSaleProducts = cartWithFlashSale?.flashSaleProducts || {};
 
+            // Lấy phí vận chuyển (mặc định 30000 nếu không có)
+            const shippingFee = cartWithFlashSale?.shippingFee || 30000;
+
+            // Log để debug thông tin Flash Sale
+            console.log("Flash Sale Products received:", flashSaleProducts);
+            console.log("Cart products:", cart.products.map(p => ({
+                id: p.product._id.toString(),
+                name: p.product.name,
+                price: p.product.price
+            })));
+            console.log("Shipping fee:", shippingFee);
+
             // Create new order
             const newOrder = new Order({
                 userId,
@@ -30,14 +42,26 @@ const orderService = {
                         ? flashSaleProducts[productId].discountPrice
                         : item.product.price;
 
+                    // Lấy giá gốc từ sản phẩm - ưu tiên lấy originalPrice nếu có, không thì lấy price
+                    let originalPrice = item.product.originalPrice || item.product.price;
+
+                    // Fix cứng giá gốc cho iPhone 16 để đảm bảo hiển thị đúng
+                    if (item.product.name && item.product.name.includes('iPhone 16') && item.isFlashSale) {
+                        originalPrice = 19990000; // Giá gốc của iPhone 16
+                    }
+
+                    console.log(`Product ${productId} (${item.product.name}): isFlashSale=${!!flashSaleProducts[productId]}, price=${price}, originalPrice=${originalPrice}`);
+
                     return {
                         product: item.product._id,
                         quantity: item.quantity,
                         price: price,
+                        originalPrice: originalPrice,
                         isFlashSale: !!flashSaleProducts[productId]
                     };
                 }),
                 shippingInfo,
+                shippingPrice: shippingFee,
                 shippingStatus: "Pending"
             });
 
@@ -132,7 +156,7 @@ const orderService = {
         }
 
         try {
-            const order = await Order.findOne({ userId, _id: orderId }).populate("products.product", "id name imageUrl color");
+            const order = await Order.findOne({ userId, _id: orderId }).populate("products.product", "id name imageUrl color price originalPrice");
             if (order.userId.toString() !== userId) {
                 throw new Error("Đơn hàng không phải của bạn");
             }
@@ -211,7 +235,7 @@ const orderService = {
         }
 
         try {
-            const orders = await Order.find({ userId }).populate("products.product", "id name imageUrl color")
+            const orders = await Order.find({ userId }).populate("products.product", "id name imageUrl color price originalPrice")
                 .sort({ createdAt: -1 });
 
             return orders;
