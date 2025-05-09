@@ -21,6 +21,10 @@ const orderSchema = new mongoose.Schema({
             price: {
                 type: Number,
                 required: true
+            },
+            isFlashSale: {
+                type: Boolean,
+                default: false
             }
         }
     ],

@@ -3,27 +3,40 @@ import Order from "../models/order.model.js";
 import cartService from "./cart.service.js";
 import paymentService from "./payment.service.js";
 import Payment from "../models/payment.model.js";
+import flashSaleService from "./flashSale.service.js";
 
 const orderService = {
-    createOrder: async (userId, shippingInfo, paymentMethod) => {
+    createOrder: async (userId, shippingInfo, paymentMethod, cartWithFlashSale) => {
         const session = await mongoose.startSession();
         session.startTransaction();
         try {
             // Get current cart
-            const cart = await cartService.getMyCart(userId);
+            const cart = cartWithFlashSale || await cartService.getMyCart(userId);
 
             if (!cart || cart.products.length === 0) {
                 throw new Error("Cart is empty");
             }
 
+            // Xử lý dữ liệu Flash Sale
+            const flashSaleProducts = cartWithFlashSale?.flashSaleProducts || {};
+
             // Create new order
             const newOrder = new Order({
                 userId,
-                products: cart.products.map(item => ({
-                    product: item.product._id,
-                    quantity: item.quantity,
-                    price: item.product.price
-                })),
+                products: cart.products.map(item => {
+                    const productId = item.product._id.toString();
+                    // Sử dụng giá Flash Sale nếu có, nếu không thì dùng giá gốc
+                    const price = flashSaleProducts[productId]
+                        ? flashSaleProducts[productId].discountPrice
+                        : item.product.price;
+
+                    return {
+                        product: item.product._id,
+                        quantity: item.quantity,
+                        price: price,
+                        isFlashSale: !!flashSaleProducts[productId]
+                    };
+                }),
                 shippingInfo,
                 shippingStatus: "Pending"
             });
@@ -52,8 +65,23 @@ const orderService = {
                 paymentUrl = await paymentService.createVNPayUrl(newOrder);
             }
 
+            // Cập nhật soldCount cho các sản phẩm Flash Sale
+            try {
+                for (const item of newOrder.products) {
+                    const productId = item.product.toString();
+                    if (item.isFlashSale && flashSaleProducts[productId]) {
+                        const flashSaleId = flashSaleProducts[productId].flashSaleId;
+                        await flashSaleService.updateSoldCount(flashSaleId, productId, item.quantity);
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating flash sale sold count:', error);
+                // Không throw lỗi ở đây vì đơn hàng đã được tạo thành công
+            }
+
             return {
                 newOrder: newOrder.toObject(),
+                payment: payment.toObject(),
                 paymentUrl
             };
         }

@@ -6,7 +6,7 @@ const orderController = {
         const userId = req.user.id;
         const email = req.user.email;
 
-        const { shippingInfo, paymentMethod } = req.body;
+        const { shippingInfo, paymentMethod, cartWithFlashSale } = req.body;
 
         if (!userId) {
             return res.status(401).json({
@@ -21,7 +21,7 @@ const orderController = {
         }
 
         try {
-            const newData = await orderService.createOrder(userId, shippingInfo, paymentMethod);
+            const newData = await orderService.createOrder(userId, shippingInfo, paymentMethod, cartWithFlashSale);
 
             // Gửi email xác nhận đơn hàng
             try {
