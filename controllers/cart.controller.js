@@ -65,7 +65,7 @@ const cartController = {
 
     addProductToCart: async (req, res) => {
         const userId = req?.user?._id;
-        const { productId } = req.body;
+        const { productId, isFlashSale, flashSaleId, discountPrice } = req.body;
 
         if (!userId) {
             return res.status(401).json({
@@ -88,6 +88,21 @@ const cartController = {
                 });
             }
 
+            // Nếu là sản phẩm Flash Sale, thêm thông tin này
+            if (isFlashSale && flashSaleId && discountPrice) {
+                console.log(`Adding Flash Sale product: ${productId}, Flash Sale ID: ${flashSaleId}, Price: ${discountPrice}`);
+                // Lưu thông tin Flash Sale vào session hoặc cache để sử dụng khi tạo đơn hàng
+                const cart = await cartService.addProductToCart(userId, productId, {
+                    isFlashSale,
+                    flashSaleId,
+                    discountPrice
+                });
+                return res.status(200).json({
+                    cart,
+                    message: "Create flash sale product in cart successfully"
+                });
+            }
+
             const cart = await cartService.addProductToCart(userId, productId);
             return res.status(200).json({
                 cart,
@@ -95,6 +110,7 @@ const cartController = {
             });
         }
         catch (err) {
+            console.error("Error adding product to cart:", err);
             return res.status(500).json({
                 message: "Create product in cart failed"
             })

@@ -4,6 +4,7 @@ import flashSaleController from "../controllers/flashSale.controller.js";
 const FlashSaleRouter = Router();
 
 FlashSaleRouter.post('/create', flashSaleController.createFlashSale);
+FlashSaleRouter.get('/', flashSaleController.getAllFlashSales);
 FlashSaleRouter.get('/active', flashSaleController.getActiveFlashSales);
 FlashSaleRouter.get('/:id', flashSaleController.getFlashSaleById);
 FlashSaleRouter.put('/update/:id', flashSaleController.updateFlashSale);

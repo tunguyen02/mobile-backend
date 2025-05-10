@@ -3,6 +3,7 @@ import flashSaleService from '../services/flashSale.service.js';
 const flashSaleController = {
     createFlashSale: async (req, res) => {
         try {
+            console.log('Creating flash sale with data:', JSON.stringify(req.body, null, 2));
             const flashSale = await flashSaleService.createFlashSale(req.body);
 
             res.status(201).json({
@@ -10,9 +11,30 @@ const flashSaleController = {
                 data: flashSale
             });
         } catch (error) {
+            console.error('Error creating flash sale:', error);
             res.status(400).json({
                 success: false,
-                message: error.message
+                message: error.message,
+                stack: process.env.NODE_ENV === 'production' ? null : error.stack
+            });
+        }
+    },
+
+    getAllFlashSales: async (req, res) => {
+        try {
+            console.log('Getting all flash sales');
+            const flashSales = await flashSaleService.getAllFlashSales();
+
+            res.status(200).json({
+                success: true,
+                data: flashSales
+            });
+        } catch (error) {
+            console.error('Error getting all flash sales:', error);
+            res.status(400).json({
+                success: false,
+                message: error.message,
+                stack: process.env.NODE_ENV === 'production' ? null : error.stack
             });
         }
     },

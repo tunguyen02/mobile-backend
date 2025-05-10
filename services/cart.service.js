@@ -85,7 +85,7 @@ const cartService = {
         }
     },
 
-    addProductToCart: async (userId, productId) => {
+    addProductToCart: async (userId, productId, flashSaleInfo = null) => {
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             throw new Error("User ID invalid");
         }
@@ -114,6 +114,21 @@ const cartService = {
                     product: productId,
                     quantity: 1,
                 });
+            }
+
+            // Nếu là sản phẩm flash sale, lưu thông tin
+            if (flashSaleInfo) {
+                // Nếu chưa có flashSaleProducts trong cart, tạo mới
+                if (!cart.flashSaleProducts) {
+                    cart.flashSaleProducts = {};
+                }
+                // Lưu thông tin Flash Sale
+                cart.flashSaleProducts[productId] = {
+                    flashSaleId: flashSaleInfo.flashSaleId,
+                    discountPrice: flashSaleInfo.discountPrice
+                };
+
+                console.log("Updated Flash Sale Products in cart:", cart.flashSaleProducts);
             }
 
             // Cập nhật tổng giá

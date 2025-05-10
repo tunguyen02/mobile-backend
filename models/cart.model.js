@@ -25,6 +25,22 @@ const cartSchema = new mongoose.Schema({
         min: 0,
         required: true
     },
+    flashSaleProducts: {
+        type: Map,
+        of: new mongoose.Schema({
+            flashSaleId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "FlashSale",
+                required: true
+            },
+            discountPrice: {
+                type: Number,
+                required: true,
+                min: 0
+            }
+        }, { _id: false }),
+        default: {}
+    }
 }, {
     timestamps: true,
 });
