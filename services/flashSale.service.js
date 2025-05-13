@@ -19,9 +19,9 @@ const flashSaleService = {
                     if (!product) {
                         throw new Error(`Product ${item.product} not found`);
                     }
-                    
+
                     console.log(`Found product: ${product.name}, stock: ${product.countInStock}, requested: ${item.quantity}`);
-                    
+
                     if (item.quantity > product.countInStock) {
                         throw new Error(`Product ${product.name} has insufficient stock. Available: ${product.countInStock}, Requested: ${item.quantity}`);
                     }
@@ -50,7 +50,7 @@ const flashSaleService = {
         try {
             const flashSales = await FlashSale.find()
                 .populate('products.product', 'name price imageUrl');
-            
+
             return flashSales;
         } catch (error) {
             throw new Error(error.message);
@@ -102,6 +102,14 @@ const flashSaleService = {
             }
 
             if (data.products) {
+                // Lưu lại map của soldCount hiện tại trước khi cập nhật
+                const currentSoldCounts = {};
+                flashSale.products.forEach(item => {
+                    const productId = item.product.toString();
+                    currentSoldCounts[productId] = item.soldCount || 0;
+                });
+
+                // Kiểm tra các sản phẩm mới
                 for (const item of data.products) {
                     const product = await Product.findById(item.product);
                     if (!product) {
@@ -109,6 +117,12 @@ const flashSaleService = {
                     }
                     if (item.quantity > product.countInStock) {
                         throw new Error(`Product ${product.name} has insufficient stock`);
+                    }
+
+                    // Giữ lại soldCount cho các sản phẩm đã tồn tại
+                    const productId = item.product.toString();
+                    if (currentSoldCounts[productId] !== undefined) {
+                        item.soldCount = currentSoldCounts[productId];
                     }
                 }
             }
