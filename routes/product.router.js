@@ -8,6 +8,9 @@ const upload = multer({ storage: storage });
 
 const ProductRouter = Router();
 
+// Route cho so sánh sản phẩm
+ProductRouter.post('/compare', productController.compareProducts);
+
 ProductRouter.get('/', productController.getAllProducts);
 ProductRouter.get('/product-details/:id', productController.getProductById);
 ProductRouter.get('/details/:slug', productController.getProductBySlug);

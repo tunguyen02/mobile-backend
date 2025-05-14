@@ -153,6 +153,50 @@ const productController = {
                 message: error.message
             });
         }
+    },
+
+    compareProducts: async (req, res) => {
+        try {
+            const { productIds } = req.body;
+
+            // Kiểm tra nếu không có ID hoặc số lượng ID không hợp lệ
+            if (!productIds || !Array.isArray(productIds) || productIds.length < 2) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cần ít nhất 2 sản phẩm để so sánh'
+                });
+            }
+
+            // Giới hạn số lượng sản phẩm so sánh (tối đa 4)
+            const limitedIds = productIds.slice(0, 4);
+
+            // Lấy thông tin chi tiết của sản phẩm
+            const products = await productService.getProductsByIds(limitedIds);
+
+            // Lấy thông tin chi tiết kỹ thuật của sản phẩm
+            const productDetails = await productService.getProductDetails(limitedIds);
+
+            // Kết hợp thông tin sản phẩm và chi tiết kỹ thuật
+            const combinedData = products.map(product => {
+                const details = productDetails.find(detail => detail.product._id.toString() === product._id.toString());
+                return {
+                    ...product.toObject(),
+                    details: details || null
+                };
+            });
+
+            res.status(200).json({
+                success: true,
+                data: combinedData
+            });
+        } catch (error) {
+            console.error('Error comparing products:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Đã xảy ra lỗi khi so sánh sản phẩm',
+                error: error.message
+            });
+        }
     }
 };
 

@@ -1,6 +1,7 @@
 import slugify from "slugify";
 import Product from "../models/product.model.js";
 import Brand from "../models/brand.model.js";
+import ProductDetails from "../models/productDetails.model.js";
 
 export const generateSlugify = async (name) => {
     let slug = slugify(
@@ -183,6 +184,28 @@ const productService = {
             throw new Error(error.message);
         }
     },
+
+    getProductsByIds: async (productIds) => {
+        try {
+            const products = await Product.find({ _id: { $in: productIds } })
+                .populate('brand');
+            return products;
+        } catch (error) {
+            console.error('Error getting products by IDs:', error);
+            throw new Error('Không thể lấy thông tin sản phẩm');
+        }
+    },
+
+    getProductDetails: async (productIds) => {
+        try {
+            const details = await ProductDetails.find({ product: { $in: productIds } })
+                .populate('product');
+            return details;
+        } catch (error) {
+            console.error('Error getting product details:', error);
+            throw new Error('Không thể lấy thông tin chi tiết sản phẩm');
+        }
+    }
 };
 
 export default productService;
