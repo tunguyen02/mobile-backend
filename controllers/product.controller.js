@@ -1,6 +1,7 @@
 import brandService from "../services/brand.service.js";
 import productService from "../services/product.service.js";
 import cloudinaryServices from "../services/cloudinary.service.js";
+import FlashSale from "../models/flashSale.model.js";
 
 const productController = {
     createProduct: async (req, res) => {
@@ -176,11 +177,58 @@ const productController = {
             // Lấy thông tin chi tiết kỹ thuật của sản phẩm
             const productDetails = await productService.getProductDetails(limitedIds);
 
-            // Kết hợp thông tin sản phẩm và chi tiết kỹ thuật
+            // Lấy thông tin flash sale đang hoạt động
+            const now = new Date();
+            const activeFlashSales = await FlashSale.find({
+                isActive: true,
+                startTime: { $lte: now },
+                endTime: { $gte: now }
+            });
+
+            // Tạo map các sản phẩm flash sale để dễ tra cứu
+            const flashSaleProductsMap = {};
+
+            activeFlashSales.forEach(flashSale => {
+                flashSale.products.forEach(product => {
+                    const productId = product.product.toString();
+                    if (!flashSaleProductsMap[productId] ||
+                        flashSaleProductsMap[productId].discountPrice > product.discountPrice) {
+                        flashSaleProductsMap[productId] = {
+                            isFlashSale: true,
+                            flashSaleId: flashSale._id,
+                            discountPrice: product.discountPrice,
+                            originalPrice: null, // Sẽ được cập nhật sau
+                            discountPercent: 0, // Sẽ được tính toán sau
+                            quantity: product.quantity,
+                            soldCount: product.soldCount,
+                            endTime: flashSale.endTime
+                        };
+                    }
+                });
+            });
+
+            // Kết hợp thông tin sản phẩm, chi tiết kỹ thuật và thông tin flash sale
             const combinedData = products.map(product => {
                 const details = productDetails.find(detail => detail.product._id.toString() === product._id.toString());
+                const productObj = product.toObject();
+
+                // Thêm thông tin flash sale nếu sản phẩm đang trong flash sale
+                const flashSaleInfo = flashSaleProductsMap[product._id.toString()];
+                if (flashSaleInfo) {
+                    // Cập nhật thông tin flash sale
+                    flashSaleInfo.originalPrice = productObj.price;
+                    flashSaleInfo.discountPercent = Math.round((1 - flashSaleInfo.discountPrice / productObj.price) * 100);
+
+                    // Thêm thông tin vào đối tượng sản phẩm
+                    productObj.isFlashSale = true;
+                    productObj.isOnSale = true;
+                    productObj.discountPercent = flashSaleInfo.discountPercent;
+                    productObj.originalPrice = productObj.price;
+                    productObj.price = flashSaleInfo.discountPrice;
+                }
+
                 return {
-                    ...product.toObject(),
+                    ...productObj,
                     details: details || null
                 };
             });
@@ -194,6 +242,307 @@ const productController = {
             res.status(500).json({
                 success: false,
                 message: 'Đã xảy ra lỗi khi so sánh sản phẩm',
+                error: error.message
+            });
+        }
+    },
+
+    // Tìm sản phẩm theo khoảng giá
+    findProductsByPrice: async (req, res) => {
+        try {
+            const { targetPrice, range, limit } = req.query;
+
+            if (!targetPrice) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cần cung cấp giá mục tiêu'
+                });
+            }
+
+            const parsedPrice = parseInt(targetPrice);
+            const parsedRange = range ? parseInt(range) : 2000000;
+            const parsedLimit = limit ? parseInt(limit) : 4;
+
+            if (isNaN(parsedPrice)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Giá mục tiêu không hợp lệ'
+                });
+            }
+
+            const products = await productService.findProductsByPriceRange(parsedPrice, parsedRange, parsedLimit);
+
+            // Lấy thông tin chi tiết kỹ thuật của sản phẩm
+            const productIds = products.map(product => product._id);
+            const productDetails = await productService.getProductDetails(productIds);
+
+            // Kết hợp thông tin sản phẩm và chi tiết kỹ thuật
+            const combinedData = products.map(product => {
+                const details = productDetails.find(detail => detail.product && detail.product._id.toString() === product._id.toString());
+                // Đảm bảo rằng thông tin sản phẩm đã bao gồm thông tin flash sale nếu có
+                return {
+                    ...product,
+                    details: details || null
+                };
+            });
+
+            res.status(200).json({
+                success: true,
+                data: combinedData
+            });
+        } catch (error) {
+            console.error('Error finding products by price:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Đã xảy ra lỗi khi tìm sản phẩm theo giá',
+                error: error.message
+            });
+        }
+    },
+
+    // Tìm sản phẩm theo camera
+    findProductsByCamera: async (req, res) => {
+        try {
+            const { cameraSpec, limit } = req.query;
+
+            if (!cameraSpec) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cần cung cấp thông số camera'
+                });
+            }
+
+            const parsedLimit = limit ? parseInt(limit) : 4;
+
+            const products = await productService.findProductsByCamera(cameraSpec, parsedLimit);
+
+            // Lấy thông tin chi tiết kỹ thuật của sản phẩm
+            const productIds = products.map(product => product._id);
+            const productDetails = await productService.getProductDetails(productIds);
+
+            // Kết hợp thông tin sản phẩm và chi tiết kỹ thuật
+            const combinedData = products.map(product => {
+                const details = productDetails.find(detail => detail.product && detail.product._id.toString() === product._id.toString());
+                return {
+                    ...product.toObject(),
+                    details: details || null
+                };
+            });
+
+            res.status(200).json({
+                success: true,
+                data: combinedData
+            });
+        } catch (error) {
+            console.error('Error finding products by camera:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Đã xảy ra lỗi khi tìm sản phẩm theo camera',
+                error: error.message
+            });
+        }
+    },
+
+    // Tìm sản phẩm theo pin
+    findProductsByBattery: async (req, res) => {
+        try {
+            const { batteryCapacity, limit } = req.query;
+
+            if (!batteryCapacity) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cần cung cấp dung lượng pin'
+                });
+            }
+
+            const parsedLimit = limit ? parseInt(limit) : 4;
+
+            const products = await productService.findProductsByBatteryCapacity(batteryCapacity, parsedLimit);
+
+            // Lấy thông tin chi tiết kỹ thuật của sản phẩm
+            const productIds = products.map(product => product._id);
+            const productDetails = await productService.getProductDetails(productIds);
+
+            // Kết hợp thông tin sản phẩm và chi tiết kỹ thuật
+            const combinedData = products.map(product => {
+                const details = productDetails.find(detail => detail.product && detail.product._id.toString() === product._id.toString());
+                return {
+                    ...product.toObject(),
+                    details: details || null
+                };
+            });
+
+            res.status(200).json({
+                success: true,
+                data: combinedData
+            });
+        } catch (error) {
+            console.error('Error finding products by battery:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Đã xảy ra lỗi khi tìm sản phẩm theo pin',
+                error: error.message
+            });
+        }
+    },
+
+    // Tìm sản phẩm cùng loại
+    findProductsBySeries: async (req, res) => {
+        try {
+            const { productName, limit } = req.query;
+
+            if (!productName) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cần cung cấp tên sản phẩm'
+                });
+            }
+
+            const parsedLimit = limit ? parseInt(limit) : 4;
+
+            const products = await productService.findProductsBySeries(productName, parsedLimit);
+
+            // Lấy thông tin chi tiết kỹ thuật của sản phẩm
+            const productIds = products.map(product => product._id);
+            const productDetails = await productService.getProductDetails(productIds);
+
+            // Kết hợp thông tin sản phẩm và chi tiết kỹ thuật
+            const combinedData = products.map(product => {
+                const details = productDetails.find(detail => detail.product && detail.product._id.toString() === product._id.toString());
+                return {
+                    ...product.toObject(),
+                    details: details || null
+                };
+            });
+
+            res.status(200).json({
+                success: true,
+                data: combinedData
+            });
+        } catch (error) {
+            console.error('Error finding products by series:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Đã xảy ra lỗi khi tìm sản phẩm cùng loại',
+                error: error.message
+            });
+        }
+    },
+
+    // Tìm sản phẩm theo dung lượng
+    findProductsByStorage: async (req, res) => {
+        try {
+            const { storage, limit } = req.query;
+
+            if (!storage) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cần cung cấp dung lượng bộ nhớ'
+                });
+            }
+
+            const parsedLimit = limit ? parseInt(limit) : 4;
+
+            const products = await productService.findProductsByStorage(storage, parsedLimit);
+
+            // Lấy thông tin chi tiết kỹ thuật của sản phẩm
+            const productIds = products.map(product => product._id);
+            const productDetails = await productService.getProductDetails(productIds);
+
+            // Kết hợp thông tin sản phẩm và chi tiết kỹ thuật
+            const combinedData = products.map(product => {
+                const details = productDetails.find(detail => detail.product && detail.product._id.toString() === product._id.toString());
+                return {
+                    ...product.toObject(),
+                    details: details || null
+                };
+            });
+
+            res.status(200).json({
+                success: true,
+                data: combinedData
+            });
+        } catch (error) {
+            console.error('Error finding products by storage:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Đã xảy ra lỗi khi tìm sản phẩm theo dung lượng',
+                error: error.message
+            });
+        }
+    },
+
+    // Lấy danh sách các thông số camera distinct
+    getDistinctCameraSpecs: async (req, res) => {
+        try {
+            const cameraSpecs = await productService.getDistinctCameraSpecs();
+
+            res.status(200).json({
+                success: true,
+                data: cameraSpecs
+            });
+        } catch (error) {
+            console.error('Error getting distinct camera specs:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Đã xảy ra lỗi khi lấy danh sách thông số camera',
+                error: error.message
+            });
+        }
+    },
+
+    // Lấy danh sách các dung lượng pin distinct
+    getDistinctBatteryCapacities: async (req, res) => {
+        try {
+            const batteryCapacities = await productService.getDistinctBatteryCapacities();
+
+            res.status(200).json({
+                success: true,
+                data: batteryCapacities
+            });
+        } catch (error) {
+            console.error('Error getting distinct battery capacities:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Đã xảy ra lỗi khi lấy danh sách dung lượng pin',
+                error: error.message
+            });
+        }
+    },
+
+    // Lấy danh sách các dung lượng bộ nhớ distinct
+    getDistinctStorageOptions: async (req, res) => {
+        try {
+            const storageOptions = await productService.getDistinctStorageOptions();
+
+            res.status(200).json({
+                success: true,
+                data: storageOptions
+            });
+        } catch (error) {
+            console.error('Error getting distinct storage options:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Đã xảy ra lỗi khi lấy danh sách dung lượng bộ nhớ',
+                error: error.message
+            });
+        }
+    },
+
+    // Lấy danh sách các series sản phẩm distinct
+    getDistinctProductSeries: async (req, res) => {
+        try {
+            const productSeries = await productService.getDistinctProductSeries();
+
+            res.status(200).json({
+                success: true,
+                data: productSeries
+            });
+        } catch (error) {
+            console.error('Error getting distinct product series:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Đã xảy ra lỗi khi lấy danh sách loại sản phẩm',
                 error: error.message
             });
         }
