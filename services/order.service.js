@@ -244,6 +244,32 @@ const orderService = {
             throw new Error("Lấy thông tin các đơn hàng thất bại");
         }
     },
+
+    // Lấy thông tin đơn hàng công khai cho trang thành công sau khi thanh toán
+    getPublicOrderDetails: async (orderId) => {
+        if (!mongoose.Types.ObjectId.isValid(orderId)) {
+            throw new Error("OrderId không hợp lệ");
+        }
+
+        try {
+            const order = await Order.findById(orderId).populate("products.product", "id name imageUrl color price originalPrice");
+
+            if (!order) {
+                throw new Error("Đơn hàng không tồn tại");
+            }
+
+            const payment = await Payment.findOne({ orderId });
+
+            return {
+                order,
+                payment
+            };
+        }
+        catch (error) {
+            console.error("Lỗi khi lấy thông tin đơn hàng công khai:", error);
+            throw error;
+        }
+    },
 };
 
 export default orderService;

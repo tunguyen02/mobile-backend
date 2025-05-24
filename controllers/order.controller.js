@@ -28,7 +28,7 @@ const orderController = {
                 console.log('Sending order confirmation email for order:', newData.newOrder._id);
                 console.log('Order products:', JSON.stringify(newData.newOrder.products, null, 2));
                 console.log('Customer email:', email);
-                await sendCreateOrderEmail(newData.newOrder, email);
+                // await sendCreateOrderEmail(newData.newOrder, email);
                 console.log('Order confirmation email sent successfully');
             } catch (emailError) {
                 console.error('Failed to send order confirmation email:', emailError);
@@ -186,6 +186,40 @@ const orderController = {
             return res.status(500).json({
                 message: error.message
             })
+        }
+    },
+    getPublicOrderDetails: async (req, res) => {
+        const orderId = req.params.orderId;
+
+        if (!orderId) {
+            return res.status(400).json({
+                status: 'ERR',
+                message: "Id của đơn hàng không tồn tại"
+            });
+        }
+
+        try {
+            const data = await orderService.getPublicOrderDetails(orderId);
+
+            if (!data || !data.order) {
+                return res.status(404).json({
+                    status: 'ERR',
+                    message: "Thông tin đơn hàng không tồn tại"
+                });
+            }
+
+            return res.status(200).json({
+                status: 'OK',
+                message: "Lấy thông tin đơn hàng thành công",
+                data
+            });
+        }
+        catch (error) {
+            console.error('Error getting public order details:', error);
+            return res.status(500).json({
+                status: 'ERR',
+                message: error.message
+            });
         }
     },
 }

@@ -9,6 +9,9 @@ OrderRouter.get('/my-orders', authMiddleware.protect, orderController.getMyOrder
 OrderRouter.get('/details/:orderId', authMiddleware.protect, orderController.getOrderDetails);
 OrderRouter.post('/create', authMiddleware.protect, orderController.createOrder);
 
+// Endpoint công khai để lấy thông tin đơn hàng từ trang thành công
+OrderRouter.get('/public/:orderId', orderController.getPublicOrderDetails);
+
 OrderRouter.get('/get-all', authMiddleware.protect, authMiddleware.restrictTo('Admin'), orderController.getAllOrders);
 OrderRouter.patch('/change-status/:orderId', authMiddleware.protect, authMiddleware.restrictTo('Admin'), orderController.changeOrderStatus);
 OrderRouter.delete('/delete/:orderId', authMiddleware.protect, authMiddleware.restrictTo('Admin'), orderController.deleteOrder);
