@@ -10,6 +10,7 @@ import cron from 'node-cron';
 import routes from './routes/index.js';
 import chatSocket from './socket/chat.socket.js';
 import orderService from './services/order.service.js';
+import RefundRouter from './routes/refund.router.js';
 
 dotenv.config();
 
@@ -49,6 +50,8 @@ cron.schedule('0 * * * *', async () => {
 });
 
 routes(app);
+// Thêm router hoàn tiền
+app.use('/api/refund', RefundRouter);
 
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => {

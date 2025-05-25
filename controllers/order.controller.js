@@ -1,5 +1,7 @@
 import { sendCreateOrderEmail } from "../services/email.service.js";
 import orderService from "../services/order.service.js";
+import refundService from "../services/refund.service.js";
+import Refund from "../models/refund.model.js";
 
 const orderController = {
     createOrder: async (req, res) => {
@@ -307,10 +309,23 @@ const orderController = {
         try {
             const result = await orderService.cancelOrderByUser(userId, orderId);
 
-            return res.status(200).json({
-                message: result.message,
-                success: result.success
-            })
+            // Kiểm tra nếu đơn hàng đã thanh toán qua VNPay, trả về thông tin hoàn tiền
+            if (result.success) {
+                // Tìm thông tin hoàn tiền nếu có
+                const refundInfo = await Refund.findOne({ orderId }).lean();
+
+                return res.status(200).json({
+                    message: result.message,
+                    success: result.success,
+                    hasRefund: !!refundInfo,
+                    refundInfo: refundInfo
+                });
+            } else {
+                return res.status(200).json({
+                    message: result.message,
+                    success: result.success
+                });
+            }
         }
         catch (error) {
             return res.status(400).json({

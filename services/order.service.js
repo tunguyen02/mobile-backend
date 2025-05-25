@@ -4,6 +4,7 @@ import cartService from "./cart.service.js";
 import paymentService from "./payment.service.js";
 import Payment from "../models/payment.model.js";
 import flashSaleService from "./flashSale.service.js";
+import refundService from "./refund.service.js";
 
 const orderService = {
     createOrder: async (userId, shippingInfo, paymentMethod, cartWithFlashSale) => {
@@ -410,9 +411,21 @@ const orderService = {
 
             // Cập nhật trạng thái thanh toán nếu đơn hàng là VNPay
             const payment = await Payment.findOne({ orderId });
-            if (payment && payment.paymentMethod === "VNPay" && payment.paymentStatus === "Pending") {
-                payment.paymentStatus = "Expired";
-                await payment.save({ session });
+            if (payment) {
+                if (payment.paymentMethod === "VNPay" && payment.paymentStatus === "Pending") {
+                    // Nếu chưa thanh toán thì đánh dấu hết hạn
+                    payment.paymentStatus = "Expired";
+                    await payment.save({ session });
+                } else if (payment.paymentMethod === "VNPay" && payment.paymentStatus === "Completed") {
+                    // Nếu đã thanh toán qua VNPay, tự động tạo yêu cầu hoàn tiền
+                    try {
+                        const result = await refundService.createRefundOnOrderCancel(orderId, payment, session);
+                        console.log("Tạo yêu cầu hoàn tiền tự động:", result);
+                    } catch (refundError) {
+                        console.error("Lỗi khi tạo yêu cầu hoàn tiền tự động:", refundError);
+                        // Vẫn tiếp tục quy trình hủy đơn hàng ngay cả khi không tạo được yêu cầu hoàn tiền
+                    }
+                }
             }
 
             await session.commitTransaction();
