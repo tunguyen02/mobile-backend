@@ -6,8 +6,10 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
+import cron from 'node-cron';
 import routes from './routes/index.js';
 import chatSocket from './socket/chat.socket.js';
+import orderService from './services/order.service.js';
 
 dotenv.config();
 
@@ -33,6 +35,18 @@ app.use(express.urlencoded({ extended: true }));
 
 // Initialize socket
 chatSocket(io);
+
+// Cron job để tự động hủy đơn hàng VNPay quá hạn 24h
+cron.schedule('0 * * * *', async () => {
+    console.log('Cron job: Đang kiểm tra đơn hàng VNPay quá hạn...');
+
+    try {
+        const result = await orderService.autoExpireOrders();
+        console.log(`Cron job: ${result.message || 'Hoàn thành kiểm tra đơn hàng quá hạn'}`);
+    } catch (error) {
+        console.error('Cron job error - Không thể hủy đơn hàng quá hạn:', error);
+    }
+});
 
 routes(app);
 

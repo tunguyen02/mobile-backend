@@ -222,6 +222,103 @@ const orderController = {
             });
         }
     },
+    changePaymentMethod: async (req, res) => {
+        try {
+            const { orderId } = req.params;
+            const userId = req.user.id;
+            const { paymentMethod } = req.body;
+
+            if (!orderId) {
+                return res.status(400).json({
+                    status: 'ERR',
+                    message: "Id của đơn hàng không tồn tại"
+                });
+            }
+
+            if (!paymentMethod || !['COD'].includes(paymentMethod)) {
+                return res.status(400).json({
+                    status: 'ERR',
+                    message: "Phương thức thanh toán không hợp lệ"
+                });
+            }
+
+            // Kiểm tra đơn hàng có tồn tại và thuộc về người dùng không
+            const orderDetails = await orderService.getOrderDetails(userId, orderId);
+            if (!orderDetails || !orderDetails.order) {
+                return res.status(404).json({
+                    status: 'ERR',
+                    message: "Không tìm thấy đơn hàng"
+                });
+            }
+
+            // Kiểm tra đơn hàng có phải VNPay và đang ở trạng thái pending không
+            if (orderDetails.payment?.paymentMethod !== 'VNPay' ||
+                orderDetails.payment?.paymentStatus !== 'Pending') {
+                return res.status(400).json({
+                    status: 'ERR',
+                    message: "Chỉ có thể chuyển đổi phương thức thanh toán cho đơn hàng VNPay chưa thanh toán"
+                });
+            }
+
+            // Kiểm tra đơn hàng còn trong thời hạn 24h không
+            const orderDate = new Date(orderDetails.order.createdAt);
+            const expiryDate = new Date(orderDate.getTime() + 24 * 60 * 60 * 1000);
+            const now = new Date();
+
+            if (now > expiryDate) {
+                return res.status(400).json({
+                    status: 'ERR',
+                    message: "Đơn hàng đã quá thời hạn 24h, không thể chuyển đổi phương thức thanh toán"
+                });
+            }
+
+            // Cập nhật phương thức thanh toán
+            const result = await orderService.changePaymentMethod(orderId, paymentMethod);
+
+            return res.status(200).json({
+                status: 'OK',
+                message: "Chuyển đổi phương thức thanh toán thành công",
+                data: result
+            });
+        } catch (error) {
+            console.error('Error changing payment method:', error);
+            return res.status(500).json({
+                status: 'ERR',
+                message: error.message
+            });
+        }
+    },
+    cancelOrder: async (req, res) => {
+        const userId = req.user.id;
+        const orderId = req.params.orderId;
+
+        if (!userId) {
+            return res.status(401).json({
+                message: 'Tài khoản không tồn tại'
+            })
+        }
+
+        if (!orderId) {
+            return res.status(400).json({
+                message: "Id của đơn hàng không tồn tại"
+            })
+        }
+
+        try {
+            const result = await orderService.cancelOrderByUser(userId, orderId);
+
+            return res.status(200).json({
+                message: result.message,
+                success: result.success
+            })
+        }
+        catch (error) {
+            return res.status(400).json({
+                message: error.message,
+                success: false
+            })
+        }
+    }
 }
 
 export default orderController;

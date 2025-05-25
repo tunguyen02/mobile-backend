@@ -126,8 +126,8 @@ const vnpaySimpleService = {
         // Tạo ngày hiện tại
         const createDate = formatDate(new Date());
 
-        // Tạo ngày hết hạn (30 phút sau)
-        const expireDate = formatDate(new Date(Date.now() + 30 * 60 * 1000));
+        // Tạo ngày hết hạn (15 phút sau)
+        const expireDate = formatDate(new Date(Date.now() + 15 * 60 * 1000));
         console.log('Create Date:', createDate);
         console.log('Expire Date:', expireDate);
 

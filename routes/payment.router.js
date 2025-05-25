@@ -10,4 +10,7 @@ PaymentRouter.get('/vnpay-return', paymentController.vnpayReturn);
 // Thêm endpoint IPN cho VNPay (không cần xác thực vì VNPay gọi trực tiếp)
 PaymentRouter.get('/vnpay-ipn', paymentController.vnpayIPN);
 
+// Endpoint thanh toán lại cho đơn hàng VNPay chưa thanh toán
+PaymentRouter.post('/repay/:orderId', authMiddleware.protect, paymentController.repayVNPay);
+
 export default PaymentRouter; 
