@@ -148,3 +148,43 @@ npm run dev
 
 Nguyễn Đình Tú - tu700131@gmail.com
 
+## Cấu hình VNPay
+
+Để sử dụng tích hợp thanh toán VNPay, bạn cần thêm các biến môi trường sau vào file `.env`:
+
+```
+# Cấu hình VNPay
+VNPAY_TMN_CODE=YOUR_MERCHANT_CODE
+VNPAY_HASH_SECRET=YOUR_HASH_SECRET
+VNPAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+VNPAY_RETURN_URL=http://localhost:8080/api/payment/vnpay/return
+VNPAY_IPN_URL=http://localhost:8080/api/payment/vnpay/ipn
+```
+
+Trong đó:
+- `VNPAY_TMN_CODE`: Mã merchant do VNPay cấp
+- `VNPAY_HASH_SECRET`: Khóa bí mật do VNPay cấp
+- `VNPAY_URL`: URL sandbox hoặc production của VNPay
+- `VNPAY_RETURN_URL`: URL endpoint xử lý kết quả thanh toán (người dùng được chuyển hướng về)
+- `VNPAY_IPN_URL`: URL endpoint xử lý thông báo kết quả thanh toán (VNPay gọi trực tiếp)
+
+### Lưu ý quan trọng
+
+1. **Chuỗi hash**:
+   - VNPay sử dụng thuật toán HMAC SHA512 để tạo chuỗi hash bảo mật
+   - Tham số cần được sắp xếp theo thứ tự a-z trước khi tạo hash
+   - Encoding URI cần đúng định dạng (thay khoảng trắng bằng dấu +)
+
+2. **Định dạng tiền tệ**:
+   - Số tiền gửi đến VNPay phải được nhân với 100
+   - Sử dụng `Math.floor()` để làm tròn xuống, tránh lỗi số thập phân
+
+3. **Timezone**:
+   - VNPay yêu cầu thời gian giao dịch theo múi giờ Việt Nam (GMT+7)
+   - Đảm bảo chuyển đổi thời gian đúng trước khi gửi đến VNPay
+
+4. **Xử lý lỗi**:
+   - Mã lỗi 97: Sai chữ ký (kiểm tra lại cách tạo hash)
+   - Mã lỗi 99: Lỗi không xác định
+   - Mã lỗi 15: Giao dịch hết hạn
+

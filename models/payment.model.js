@@ -20,7 +20,7 @@ const paymentSchema = new mongoose.Schema({
     },
     paymentStatus: {
         type: String,
-        enum: ["Pending", "Completed"],
+        enum: ["Pending", "Completed", "Expired", "Refund_Pending", "Refunded", "Refund_Failed"],
         required: true,
         default: "Pending"
     },
@@ -29,6 +29,12 @@ const paymentSchema = new mongoose.Schema({
     },
     paidAt: {
         type: Date
+    },
+    refundInfo: {
+        refundAt: Date,
+        refundAmount: Number,
+        refundTransactionId: String,
+        refundNote: String
     }
 }, {
     timestamps: true
