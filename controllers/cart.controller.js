@@ -99,14 +99,14 @@ const cartController = {
                 });
                 return res.status(200).json({
                     cart,
-                    message: "Create flash sale product in cart successfully"
+                    message: "Thêm sản phẩm vao giỏ hàng thành công",
                 });
             }
 
             const cart = await cartService.addProductToCart(userId, productId);
             return res.status(200).json({
                 cart,
-                message: "Create product in cart successfully"
+                message: "Thêm sản phẩm vào giỏ hàng thành công",
             });
         }
         catch (err) {
