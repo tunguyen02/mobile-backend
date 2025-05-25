@@ -8,6 +8,7 @@ import reportRouters from "./exportFile.router.js";
 import reviewRoutes from "./review.router.js";
 import flashSaleRoutes from "./flashSale.router.js";
 import paymentRoutes from "./payment.router.js";
+import chatRoutes from "./chat.router.js";
 
 
 const routes = (app) => {
@@ -21,6 +22,7 @@ const routes = (app) => {
     app.use('/api/review', reviewRoutes);
     app.use('/api/flash-sale', flashSaleRoutes);
     app.use('/api/payment', paymentRoutes);
+    app.use('/api/chat', chatRoutes);
 }
 
 export default routes;
