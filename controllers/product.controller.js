@@ -61,8 +61,39 @@ const productController = {
 
     getAllProducts: async (req, res) => {
         try {
-            const { searchQuery, sortOrder, selectedBrands, page, pageSize } = req.query;
-            const { products, totalProducts } = await productService.getAllProducts(searchQuery, sortOrder, selectedBrands, page, pageSize);
+            const {
+                searchQuery,
+                sortOrder,
+                selectedBrands,
+                page,
+                pageSize,
+                priceRange,
+                battery,
+                frontCamera,
+                backCamera,
+                storage,
+                ram,
+                os
+            } = req.query;
+
+            console.log("Query params:", req.query);
+            console.log("Selected brands:", selectedBrands);
+
+            const { products, totalProducts } = await productService.getAllProducts(
+                searchQuery,
+                sortOrder,
+                selectedBrands,
+                page,
+                pageSize,
+                priceRange,
+                battery,
+                frontCamera,
+                backCamera,
+                storage,
+                ram,
+                os
+            );
+
             res.status(200).json({
                 products,
                 totalProducts
@@ -476,17 +507,44 @@ const productController = {
     getDistinctCameraSpecs: async (req, res) => {
         try {
             const cameraSpecs = await productService.getDistinctCameraSpecs();
-
             res.status(200).json({
                 success: true,
                 data: cameraSpecs
             });
         } catch (error) {
-            console.error('Error getting distinct camera specs:', error);
-            res.status(500).json({
+            res.status(404).json({
                 success: false,
-                message: 'Đã xảy ra lỗi khi lấy danh sách thông số camera',
-                error: error.message
+                message: error.message
+            });
+        }
+    },
+
+    getDistinctFrontCameraSpecs: async (req, res) => {
+        try {
+            const frontCameraSpecs = await productService.getDistinctFrontCameraSpecs();
+            res.status(200).json({
+                success: true,
+                data: frontCameraSpecs
+            });
+        } catch (error) {
+            res.status(404).json({
+                success: false,
+                message: error.message
+            });
+        }
+    },
+
+    getDistinctBackCameraSpecs: async (req, res) => {
+        try {
+            const backCameraSpecs = await productService.getDistinctBackCameraSpecs();
+            res.status(200).json({
+                success: true,
+                data: backCameraSpecs
+            });
+        } catch (error) {
+            res.status(404).json({
+                success: false,
+                message: error.message
             });
         }
     },
