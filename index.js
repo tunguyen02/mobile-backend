@@ -18,15 +18,17 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
-        origin: process.env.FRONTEND_URL,
-        methods: ['GET', 'POST']
+        origin: true,
+        methods: ['GET', 'POST'],
+        credentials: true
     }
 });
 
 app.use(morgan('dev'));
 
+// Cấu hình CORS cho phép tất cả các origin
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
+    origin: true,  // Cho phép tất cả các origin
     credentials: true,
 }));
 
