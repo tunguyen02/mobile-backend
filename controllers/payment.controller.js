@@ -6,50 +6,37 @@ const paymentController = {
         try {
             const vnpParams = req.query;
 
-            // Log thông tin tham số trả về từ VNPay để debug
-            console.log('VNPay Return Parameters:', JSON.stringify(vnpParams, null, 2));
-            console.log('VNPay Response Code:', vnpParams['vnp_ResponseCode']);
-            console.log('VNPay Transaction No:', vnpParams['vnp_TransactionNo']);
-            console.log('VNPay Transaction Reference:', vnpParams['vnp_TxnRef']);
+            const result = await paymentService.processVNPayReturn(vnpParams);
 
             // Kiểm tra các mã lỗi đặc biệt từ VNPay
             if (vnpParams['vnp_ResponseCode'] === '97') {
                 console.log('VNPay error 97: Invalid signature or transaction not found');
-                return res.redirect(`${process.env.FRONTEND_URL}/order/failed?message=Giao%20dịch%20không%20hợp%20lệ`);
+                return res.redirect(`${process.env.FRONTEND_URL}/order/details/${result.payment.orderId}`);
             }
 
             if (vnpParams['vnp_ResponseCode'] === '99') {
                 console.log('VNPay error 99: Unknown error');
-                return res.redirect(`${process.env.FRONTEND_URL}/order/failed?message=Lỗi%20không%20xác%20định`);
+                return res.redirect(`${process.env.FRONTEND_URL}/order/details/${result.payment.orderId}`);
             }
-
-            const result = await paymentService.processVNPayReturn(vnpParams);
 
             if (result.success) {
                 // Redirect trực tiếp đến trang chi tiết đơn hàng thay vì trang thành công
                 console.log('VNPay payment successful, redirecting to order details page');
                 res.redirect(`${process.env.FRONTEND_URL}/order/details/${result.payment.orderId}`);
             } else {
-                // Redirect về trang thất bại
                 console.log('VNPay payment failed:', result.message);
-                res.redirect(`${process.env.FRONTEND_URL}/order/failed?message=${encodeURIComponent(result.message)}`);
+                res.redirect(`${process.env.FRONTEND_URL}/order/details/${result.payment.orderId}`);
             }
         } catch (error) {
             console.error("VNPay return error:", error);
-            res.redirect(`${process.env.FRONTEND_URL}/order/failed?message=${encodeURIComponent(error.message)}`);
+            res.redirect(`${process.env.FRONTEND_URL}/order/details/${result.payment.orderId}`);
         }
     },
 
-    // Thêm endpoint IPN để VNPay gọi trực tiếp tới server
     vnpayIPN: async (req, res) => {
         try {
             const vnpParams = req.query;
 
-            // Log thông tin IPN từ VNPay để debug
-            console.log('VNPay IPN Parameters:', JSON.stringify(vnpParams, null, 2));
-            console.log('VNPay IPN Response Code:', vnpParams['vnp_ResponseCode']);
-            console.log('VNPay IPN Transaction No:', vnpParams['vnp_TransactionNo']);
-            console.log('VNPay IPN Transaction Reference:', vnpParams['vnp_TxnRef']);
 
             const result = await paymentService.processVNPayIPN(vnpParams);
 
