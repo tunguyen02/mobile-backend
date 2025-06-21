@@ -3,6 +3,6 @@ import exportFileController from '../controllers/exportFile.controller.js';
 
 const ExportFileRouter = Router();
 
-ExportFileRouter.get('/export-file', exportFileController.exportProductCSV);
+ExportFileRouter.get('/export-file', exportFileController.exportProductExcel);
 
 export default ExportFileRouter;
