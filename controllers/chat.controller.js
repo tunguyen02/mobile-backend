@@ -7,7 +7,6 @@ const chatController = {
             const { content, type } = req.body;
             const { userId } = req.params;
 
-            // Kiểm tra userId hợp lệ
             if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
                 return res.status(400).json({
                     success: false,
@@ -35,7 +34,6 @@ const chatController = {
         try {
             const { userId } = req.params;
 
-            // Kiểm tra userId hợp lệ
             if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
                 return res.status(400).json({
                     success: false,
@@ -61,7 +59,6 @@ const chatController = {
         try {
             const { userId } = req.params;
 
-            // Kiểm tra userId hợp lệ
             if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
                 return res.status(400).json({
                     success: false,
@@ -90,7 +87,6 @@ const chatController = {
             const { userId } = req.params;
             const { status } = req.body;
 
-            // Kiểm tra userId hợp lệ
             if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
                 return res.status(400).json({
                     success: false,
@@ -116,7 +112,6 @@ const chatController = {
         try {
             const { userId } = req.params;
 
-            // Kiểm tra userId hợp lệ
             if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
                 return res.status(400).json({
                     success: false,

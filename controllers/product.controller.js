@@ -191,7 +191,6 @@ const productController = {
         try {
             const { productIds } = req.body;
 
-            // Kiểm tra nếu không có ID hoặc số lượng ID không hợp lệ
             if (!productIds || !Array.isArray(productIds) || productIds.length < 2) {
                 return res.status(400).json({
                     success: false,
@@ -199,16 +198,12 @@ const productController = {
                 });
             }
 
-            // Giới hạn số lượng sản phẩm so sánh (tối đa 4)
             const limitedIds = productIds.slice(0, 4);
 
-            // Lấy thông tin chi tiết của sản phẩm
             const products = await productService.getProductsByIds(limitedIds);
 
-            // Lấy thông tin chi tiết kỹ thuật của sản phẩm
             const productDetails = await productService.getProductDetails(limitedIds);
 
-            // Lấy thông tin flash sale đang hoạt động
             const now = new Date();
             const activeFlashSales = await FlashSale.find({
                 isActive: true,
@@ -216,7 +211,6 @@ const productController = {
                 endTime: { $gte: now }
             });
 
-            // Tạo map các sản phẩm flash sale để dễ tra cứu
             const flashSaleProductsMap = {};
 
             activeFlashSales.forEach(flashSale => {
@@ -228,8 +222,8 @@ const productController = {
                             isFlashSale: true,
                             flashSaleId: flashSale._id,
                             discountPrice: product.discountPrice,
-                            originalPrice: null, // Sẽ được cập nhật sau
-                            discountPercent: 0, // Sẽ được tính toán sau
+                            originalPrice: null,
+                            discountPercent: 0,
                             quantity: product.quantity,
                             soldCount: product.soldCount,
                             endTime: flashSale.endTime
@@ -238,7 +232,6 @@ const productController = {
                 });
             });
 
-            // Kết hợp thông tin sản phẩm, chi tiết kỹ thuật và thông tin flash sale
             const combinedData = products.map(product => {
                 const details = productDetails.find(detail => detail.product._id.toString() === product._id.toString());
                 const productObj = product.toObject();
@@ -303,7 +296,6 @@ const productController = {
 
             const products = await productService.findProductsByPriceRange(parsedPrice, parsedRange, parsedLimit);
 
-            // Lấy thông tin chi tiết kỹ thuật của sản phẩm
             const productIds = products.map(product => product._id);
             const productDetails = await productService.getProductDetails(productIds);
 

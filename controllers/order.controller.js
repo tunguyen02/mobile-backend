@@ -30,12 +30,10 @@ const orderController = {
                 console.log('Sending order confirmation email for order:', newData.newOrder._id);
                 console.log('Order products:', JSON.stringify(newData.newOrder.products, null, 2));
                 console.log('Customer email:', email);
-                // await sendCreateOrderEmail(newData.newOrder, email);
+                await sendCreateOrderEmail(newData.newOrder, email);
                 console.log('Order confirmation email sent successfully');
             } catch (emailError) {
                 console.error('Failed to send order confirmation email:', emailError);
-                // Không trả về lỗi cho client vì đơn hàng đã được tạo thành công
-                // Chỉ log lỗi để theo dõi
             }
 
             if (paymentMethod === 'VNPay') {

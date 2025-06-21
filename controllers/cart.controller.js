@@ -88,10 +88,7 @@ const cartController = {
                 });
             }
 
-            // Nếu là sản phẩm Flash Sale, thêm thông tin này
             if (isFlashSale && flashSaleId && discountPrice) {
-                console.log(`Adding Flash Sale product: ${productId}, Flash Sale ID: ${flashSaleId}, Price: ${discountPrice}`);
-                // Lưu thông tin Flash Sale vào session hoặc cache để sử dụng khi tạo đơn hàng
                 const cart = await cartService.addProductToCart(userId, productId, {
                     isFlashSale,
                     flashSaleId,

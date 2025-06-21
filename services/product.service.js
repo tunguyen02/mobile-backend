@@ -99,17 +99,17 @@ const productService = {
 
                                 // Kiểm tra nếu pin thuộc khoảng đã chọn
                                 if (maxBattery) {
-                                    // Khoảng có max (VD: 3000-4000)
+                                    // Khoảng có max 
                                     if (pinCapacity >= minBattery && pinCapacity <= maxBattery) {
                                         matchedProductIds.push(detail.product);
                                     }
                                 } else if (minBattery === 0) {
-                                    // Dưới một giá trị (VD: 0-3000)
+                                    // Dưới một giá trị 
                                     if (pinCapacity <= maxBattery) {
                                         matchedProductIds.push(detail.product);
                                     }
                                 } else {
-                                    // Trên một giá trị (VD: 5000-)
+                                    // Trên một giá trị 
                                     if (pinCapacity >= minBattery) {
                                         matchedProductIds.push(detail.product);
                                     }
@@ -170,13 +170,13 @@ const productService = {
 
                             // Kiểm tra giá trị MP có thuộc khoảng đã chọn không
                             if (maxCamera) {
-                                // Khoảng có max (VD: 12-20)
+                                // Khoảng có max 
                                 return maxMpValue >= minCamera && maxMpValue < maxCamera;
                             } else if (minCamera === 0) {
-                                // Dưới một giá trị (VD: 0-12)
+                                // Dưới một giá trị 
                                 return maxMpValue < maxCamera;
                             } else {
-                                // Trên một giá trị (VD: 48-)
+                                // Trên một giá trị 
                                 return maxMpValue >= minCamera;
                             }
                         };
@@ -213,7 +213,7 @@ const productService = {
 
                 // Xử lý lọc camera sau theo khoảng
                 if (backCamera && Array.isArray(backCamera) && backCamera.length > 0) {
-                    // Phân tích khoảng camera (vd: "12-20")
+                    // Phân tích khoảng camera 
                     const cameraRange = backCamera[0].split('-');
                     const minCamera = parseInt(cameraRange[0]);
                     const maxCamera = cameraRange[1] ? parseInt(cameraRange[1]) : null;
@@ -229,7 +229,7 @@ const productService = {
                         const checkCameraString = (cameraStr) => {
                             if (!cameraStr) return false;
 
-                            // Tìm tất cả các giá trị MP trong chuỗi camera (ví dụ: "48MP + 8MP + 2MP")
+                            // Tìm tất cả các giá trị MP trong chuỗi camera 
                             const mpValues = [];
                             const regex = /(\d+)\s*(?:MP|megapixel)/gi;
                             let match;

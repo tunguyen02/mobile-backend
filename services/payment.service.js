@@ -42,10 +42,6 @@ const paymentService = {
                 throw new Error('Invalid amount');
             }
 
-            console.log('Creating VNPay URL for order:', order._id, 'with amount:', amount);
-            console.log('Amount before sending to VNPay:', amount, '(will be multiplied by 100 in vnpay.simple.service.js)');
-            console.log('Total price from order:', order.totalPrice);
-
             // Thử lại tối đa 3 lần nếu có lỗi
             let paymentUrl = null;
             let attempts = 0;

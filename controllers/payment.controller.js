@@ -3,33 +3,31 @@ import orderService from "../services/order.service.js";
 
 const paymentController = {
     vnpayReturn: async (req, res) => {
-        try {
-            const vnpParams = req.query;
+        const vnpParams = req.query;
+        // Lấy orderId từ vnp_TxnRef 
+        const orderIdFromRef = vnpParams['vnp_TxnRef'] ? vnpParams['vnp_TxnRef'].split('_')[0] : null;
 
+        try {
             const result = await paymentService.processVNPayReturn(vnpParams);
 
-            // Kiểm tra các mã lỗi đặc biệt từ VNPay
-            if (vnpParams['vnp_ResponseCode'] === '97') {
-                console.log('VNPay error 97: Invalid signature or transaction not found');
-                return res.redirect(`${process.env.FRONTEND_URL}/order/details/${result.payment.orderId}`);
-            }
-
-            if (vnpParams['vnp_ResponseCode'] === '99') {
-                console.log('VNPay error 99: Unknown error');
-                return res.redirect(`${process.env.FRONTEND_URL}/order/details/${result.payment.orderId}`);
-            }
+            // Xác định URL để redirect một lần duy nhất
+            const redirectUrl = `${process.env.FRONTEND_URL}/order/details/${result.payment.orderId}`;
 
             if (result.success) {
-                // Redirect trực tiếp đến trang chi tiết đơn hàng thay vì trang thành công
                 console.log('VNPay payment successful, redirecting to order details page');
-                res.redirect(`${process.env.FRONTEND_URL}/order/details/${result.payment.orderId}`);
+                return res.redirect(redirectUrl);
             } else {
-                console.log('VNPay payment failed:', result.message);
-                res.redirect(`${process.env.FRONTEND_URL}/order/details/${result.payment.orderId}`);
+                console.log('VNPay payment not successful:', result.message);
+                return res.redirect(redirectUrl);
             }
         } catch (error) {
             console.error("VNPay return error:", error);
-            res.redirect(`${process.env.FRONTEND_URL}/order/details/${result.payment.orderId}`);
+            //dùng orderId đã lấy được từ vnp_TxnRef để redirect
+            if (orderIdFromRef) {
+                return res.redirect(`${process.env.FRONTEND_URL}/order/details/${orderIdFromRef}`);
+            }
+            // Fallback nếu không có orderId, chuyển về trang chủ
+            return res.redirect(`${process.env.FRONTEND_URL}/`);
         }
     },
 
@@ -61,7 +59,6 @@ const paymentController = {
             const { orderId } = req.params;
             const userId = req.user.id;
 
-            // Kiểm tra orderId hợp lệ
             if (!orderId) {
                 return res.status(400).json({
                     message: "Mã đơn hàng không hợp lệ"

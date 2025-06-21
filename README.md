@@ -105,44 +105,6 @@ EMAIL_PASSWORD=
 npm run dev
 ```
 
-## API Endpoints
-
-### User
-- `POST /api/user/auth/signup` - Đăng ký tài khoản
-- `POST /api/user/auth/login` - Đăng nhập
-- `POST /api/user/auth/signout` - Đăng xuất
-- `POST /api/user/auth/forgot-password` - Quên mật khẩu
-- `POST /api/user/auth/reset-password/:token` - Đặt lại mật khẩu
-- `POST /api/user/auth/change-password` - Đổi mật khẩu
-- `GET /api/user/profile` - Lấy thông tin người dùng
-- `PATCH /api/user/profile` - Cập nhật thông tin
-- `PATCH /api/user/avatar` - Cập nhật avatar
-
-### Product
-- `GET /api/product` - Lấy tất cả sản phẩm
-- `GET /api/product/:id` - Lấy chi tiết sản phẩm
-- `POST /api/product` - Tạo sản phẩm mới
-- `PUT /api/product/:id` - Cập nhật sản phẩm
-- `DELETE /api/product/:id` - Xóa sản phẩm
-
-### Order
-- `POST /api/order/create` - Tạo đơn hàng
-- `GET /api/order/user` - Lấy đơn hàng của người dùng
-- `GET /api/order/:id` - Lấy chi tiết đơn hàng
-- `PATCH /api/order/:id/status` - Cập nhật trạng thái đơn hàng
-
-### Cart
-- `GET /api/cart` - Lấy giỏ hàng
-- `POST /api/cart/add` - Thêm sản phẩm vào giỏ
-- `PATCH /api/cart/update` - Cập nhật giỏ hàng
-- `DELETE /api/cart/remove/:id` - Xóa sản phẩm khỏi giỏ
-
-### Review
-- `POST /api/review/create` - Tạo đánh giá
-- `GET /api/review/product/:id` - Lấy đánh giá của sản phẩm
-
-### Chat
-- Socket.io events cho chat realtime
 
 ## Liên hệ
 
@@ -168,23 +130,12 @@ Trong đó:
 - `VNPAY_RETURN_URL`: URL endpoint xử lý kết quả thanh toán (người dùng được chuyển hướng về)
 - `VNPAY_IPN_URL`: URL endpoint xử lý thông báo kết quả thanh toán (VNPay gọi trực tiếp)
 
-### Lưu ý quan trọng
+**Lưu ý quan trọng:** Khi chạy trên môi trường `localhost` để phát triển, VNPay sẽ không thể gửi yêu cầu xác nhận thanh toán (IPN) đến máy của bạn. Để xử lý việc này, bạn cần sử dụng một công cụ như [ngrok](https://ngrok.com/) để tạo một đường hầm (tunnel) công khai tới cổng `8080` (hoặc cổng mà server backend của bạn đang chạy).
 
-1. **Chuỗi hash**:
-   - VNPay sử dụng thuật toán HMAC SHA512 để tạo chuỗi hash bảo mật
-   - Tham số cần được sắp xếp theo thứ tự a-z trước khi tạo hash
-   - Encoding URI cần đúng định dạng (thay khoảng trắng bằng dấu +)
+Sau khi chạy ngrok (ví dụ: `ngrok http 8080`), bạn sẽ nhận được một URL công khai (ví dụ: `https://your-ngrok-id.ngrok.io`). Bạn phải cập nhật các biến `VNPAY_RETURN_URL` và `VNPAY_IPN_URL` trong file `.env` bằng URL này.
 
-2. **Định dạng tiền tệ**:
-   - Số tiền gửi đến VNPay phải được nhân với 100
-   - Sử dụng `Math.floor()` để làm tròn xuống, tránh lỗi số thập phân
-
-3. **Timezone**:
-   - VNPay yêu cầu thời gian giao dịch theo múi giờ Việt Nam (GMT+7)
-   - Đảm bảo chuyển đổi thời gian đúng trước khi gửi đến VNPay
-
-4. **Xử lý lỗi**:
-   - Mã lỗi 97: Sai chữ ký (kiểm tra lại cách tạo hash)
-   - Mã lỗi 99: Lỗi không xác định
-   - Mã lỗi 15: Giao dịch hết hạn
-
+Ví dụ:
+```
+VNPAY_RETURN_URL=https://your-ngrok-id.ngrok.io/api/payment/vnpay/return
+VNPAY_IPN_URL=https://your-ngrok-id.ngrok.io/api/payment/vnpay/ipn
+```

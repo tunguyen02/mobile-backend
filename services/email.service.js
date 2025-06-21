@@ -11,8 +11,8 @@ const transporter = nodemailer.createTransport({
     host: "sandbox.smtp.mailtrap.io",
     port: 2525,
     auth: {
-        user: "7781eb59c99f81", // Thay bằng username của bạn
-        pass: "4b72f7554cc9ed"  // Thay bằng password của bạn
+        user: process.env.EMAIL_USERNAME || "8af04309f516b7",
+        pass: process.env.EMAIL_PASSWORD || "278798eadf5a25"
     }
 });
 
