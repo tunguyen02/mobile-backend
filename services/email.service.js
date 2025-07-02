@@ -44,23 +44,18 @@ export const sendCreateOrderEmail = async (order, email) => {
     try {
         console.log("Order data received:", JSON.stringify(order, null, 2));
 
-        // Định dạng lại dữ liệu sản phẩm
         const formattedProducts = order.products.map(item => {
             let product, price, quantity;
 
-            // Xác định cấu trúc đúng của dữ liệu sản phẩm dựa trên dữ liệu nhận được
             if (item.product) {
-                // Trường hợp item.product là object chứa thông tin sản phẩm
                 product = item.product;
                 price = item.price || 0;
                 quantity = item.quantity || 1;
             } else if (item.name) {
-                // Trường hợp item chính là thông tin sản phẩm
                 product = item;
                 price = item.price || 0;
                 quantity = item.quantity || 1;
             } else {
-                // Trường hợp mặc định, tạo object với giá trị mặc định
                 product = {};
                 price = 0;
                 quantity = 1;
@@ -78,7 +73,6 @@ export const sendCreateOrderEmail = async (order, email) => {
             };
         });
 
-        // Định dạng dữ liệu đơn hàng
         const orderData = {
             ...order,
             createdAtFormatted: new Date(order.createdAt).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),

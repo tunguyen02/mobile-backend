@@ -2,7 +2,6 @@ import refundService from "../services/refund.service.js";
 import Order from "../models/order.model.js";
 
 const refundController = {
-    // Người dùng tạo yêu cầu hoàn tiền
     createRefundRequest: async (req, res) => {
         try {
             const { orderId, reason } = req.body;
@@ -36,16 +35,13 @@ const refundController = {
         }
     },
 
-    // Người dùng xem các yêu cầu hoàn tiền của họ
     getUserRefunds: async (req, res) => {
         try {
             const userId = req.user.id;
 
-            // Lấy danh sách đơn hàng của người dùng
             const userOrders = await Order.find({ userId }).select("_id");
             const orderIds = userOrders.map(order => order._id);
 
-            // Lấy danh sách yêu cầu hoàn tiền dựa trên đơn hàng
             const refunds = await refundService.getRefunds({ orderId: { $in: orderIds } });
 
             return res.status(200).json({
@@ -61,7 +57,6 @@ const refundController = {
         }
     },
 
-    // Admin lấy tất cả yêu cầu hoàn tiền
     getAllRefunds: async (req, res) => {
         try {
             const refunds = await refundService.getRefunds();
@@ -79,7 +74,6 @@ const refundController = {
         }
     },
 
-    // Xem chi tiết yêu cầu hoàn tiền
     getRefundDetails: async (req, res) => {
         try {
             const { refundId } = req.params;
@@ -99,7 +93,6 @@ const refundController = {
         }
     },
 
-    // Admin phê duyệt yêu cầu hoàn tiền
     approveRefund: async (req, res) => {
         try {
             const { refundId } = req.params;
@@ -121,7 +114,6 @@ const refundController = {
         }
     },
 
-    // Admin từ chối yêu cầu hoàn tiền
     rejectRefund: async (req, res) => {
         try {
             const { refundId } = req.params;

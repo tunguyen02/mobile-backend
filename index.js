@@ -26,9 +26,8 @@ const io = new Server(httpServer, {
 
 app.use(morgan('dev'));
 
-// Cấu hình CORS cho phép tất cả các origin
 app.use(cors({
-    origin: true,  // Cho phép tất cả các origin
+    origin: true,
     credentials: true,
 }));
 
@@ -36,10 +35,8 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Initialize socket
 chatSocket(io);
 
-// Cron job để tự động hủy đơn hàng VNPay quá hạn 24h
 cron.schedule('0 * * * *', async () => {
     console.log('Cron job: Đang kiểm tra đơn hàng VNPay quá hạn...');
 
@@ -52,7 +49,6 @@ cron.schedule('0 * * * *', async () => {
 });
 
 routes(app);
-// Thêm router hoàn tiền
 app.use('/api/refund', RefundRouter);
 
 mongoose.connect(process.env.MONGODB_URI)

@@ -6,12 +6,10 @@ const flashSaleService = {
         try {
             const { title, startTime, endTime, products } = data;
 
-            // Validate time
             if (startTime >= endTime) {
                 throw new Error('End time must be after start time');
             }
 
-            // Validate products
             for (const item of products) {
                 console.log(`Validating product: ${item.product}`);
                 try {

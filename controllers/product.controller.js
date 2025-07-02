@@ -198,7 +198,7 @@ const productController = {
                 });
             }
 
-            const limitedIds = productIds.slice(0, 4);
+            const limitedIds = productIds.slice(0, 2);
 
             const products = await productService.getProductsByIds(limitedIds);
 
@@ -236,10 +236,8 @@ const productController = {
                 const details = productDetails.find(detail => detail.product._id.toString() === product._id.toString());
                 const productObj = product.toObject();
 
-                // Thêm thông tin flash sale nếu sản phẩm đang trong flash sale
                 const flashSaleInfo = flashSaleProductsMap[product._id.toString()];
                 if (flashSaleInfo) {
-                    // Cập nhật thông tin flash sale
                     flashSaleInfo.originalPrice = productObj.price;
                     flashSaleInfo.discountPercent = Math.round((1 - flashSaleInfo.discountPrice / productObj.price) * 100);
 
@@ -299,10 +297,8 @@ const productController = {
             const productIds = products.map(product => product._id);
             const productDetails = await productService.getProductDetails(productIds);
 
-            // Kết hợp thông tin sản phẩm và chi tiết kỹ thuật
             const combinedData = products.map(product => {
                 const details = productDetails.find(detail => detail.product && detail.product._id.toString() === product._id.toString());
-                // Đảm bảo rằng thông tin sản phẩm đã bao gồm thông tin flash sale nếu có
                 return {
                     ...product,
                     details: details || null
@@ -339,11 +335,9 @@ const productController = {
 
             const products = await productService.findProductsByCamera(cameraSpec, parsedLimit);
 
-            // Lấy thông tin chi tiết kỹ thuật của sản phẩm
             const productIds = products.map(product => product._id);
             const productDetails = await productService.getProductDetails(productIds);
 
-            // Kết hợp thông tin sản phẩm và chi tiết kỹ thuật
             const combinedData = products.map(product => {
                 const details = productDetails.find(detail => detail.product && detail.product._id.toString() === product._id.toString());
                 return {
@@ -382,11 +376,9 @@ const productController = {
 
             const products = await productService.findProductsByBatteryCapacity(batteryCapacity, parsedLimit);
 
-            // Lấy thông tin chi tiết kỹ thuật của sản phẩm
             const productIds = products.map(product => product._id);
             const productDetails = await productService.getProductDetails(productIds);
 
-            // Kết hợp thông tin sản phẩm và chi tiết kỹ thuật
             const combinedData = products.map(product => {
                 const details = productDetails.find(detail => detail.product && detail.product._id.toString() === product._id.toString());
                 return {
@@ -425,11 +417,9 @@ const productController = {
 
             const products = await productService.findProductsBySeries(productName, parsedLimit);
 
-            // Lấy thông tin chi tiết kỹ thuật của sản phẩm
             const productIds = products.map(product => product._id);
             const productDetails = await productService.getProductDetails(productIds);
 
-            // Kết hợp thông tin sản phẩm và chi tiết kỹ thuật
             const combinedData = products.map(product => {
                 const details = productDetails.find(detail => detail.product && detail.product._id.toString() === product._id.toString());
                 return {
@@ -452,7 +442,6 @@ const productController = {
         }
     },
 
-    // Tìm sản phẩm theo dung lượng
     findProductsByStorage: async (req, res) => {
         try {
             const { storage, limit } = req.query;
@@ -468,11 +457,9 @@ const productController = {
 
             const products = await productService.findProductsByStorage(storage, parsedLimit);
 
-            // Lấy thông tin chi tiết kỹ thuật của sản phẩm
             const productIds = products.map(product => product._id);
             const productDetails = await productService.getProductDetails(productIds);
 
-            // Kết hợp thông tin sản phẩm và chi tiết kỹ thuật
             const combinedData = products.map(product => {
                 const details = productDetails.find(detail => detail.product && detail.product._id.toString() === product._id.toString());
                 return {

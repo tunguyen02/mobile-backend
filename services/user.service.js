@@ -169,12 +169,10 @@ const userService = {
             await user.save({ validateBeforeSave: false });
 
             try {
-                // Gửi email đặt lại mật khẩu
                 await sendResetPasswordEmail(user, resetToken);
 
                 return {
                     message: 'Reset password link sent to email',
-                    // Trong môi trường phát triển, có thể trả về token để test
                     devToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
                 };
             } catch (error) {

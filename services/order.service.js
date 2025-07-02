@@ -11,30 +11,24 @@ const orderService = {
         const session = await mongoose.startSession();
         session.startTransaction();
         try {
-            // Get current cart
             const cart = cartWithFlashSale || await cartService.getMyCart(userId);
 
             if (!cart || cart.products.length === 0) {
                 throw new Error("Cart is empty");
             }
 
-            // Xử lý dữ liệu Flash Sale
             const flashSaleProducts = cartWithFlashSale?.flashSaleProducts || {};
 
-            // Lấy phí vận chuyển (mặc định 30000 nếu không có)
             const shippingFee = cartWithFlashSale?.shippingFee || 30000;
 
-            // Create new order
             const newOrder = new Order({
                 userId,
                 products: cart.products.map(item => {
                     const productId = item.product._id.toString();
-                    // Sử dụng giá Flash Sale nếu có, nếu không thì dùng giá gốc
                     const price = flashSaleProducts[productId]
                         ? flashSaleProducts[productId].discountPrice
                         : item.product.price;
 
-                    // Lấy giá gốc từ sản phẩm - ưu tiên lấy originalPrice nếu có, không thì lấy price
                     let originalPrice = item.product.originalPrice || item.product.price;
 
                     return {
@@ -50,13 +44,10 @@ const orderService = {
                 shippingStatus: "Pending"
             });
 
-            // Save new order
             await newOrder.save({ session });
 
-            // Clear cart
             await cartService.clearCart(userId, session);
 
-            // Initialize payment
             const paymentData = {
                 paymentMethod,
                 amountPaid: newOrder.totalPrice,
@@ -68,7 +59,6 @@ const orderService = {
             await session.commitTransaction();
             await session.endSession();
 
-            // If payment via VNPay, create payment URL
             let paymentUrl = null;
             if (paymentMethod === "VNPay") {
                 paymentUrl = await paymentService.createVNPayUrl(newOrder);
@@ -85,7 +75,6 @@ const orderService = {
                 }
             } catch (error) {
                 console.error('Error updating flash sale sold count:', error);
-                // Không throw lỗi ở đây vì đơn hàng đã được tạo thành công
             }
 
             return {
@@ -230,7 +219,6 @@ const orderService = {
         }
     },
 
-    // Lấy thông tin đơn hàng công khai cho trang thành công sau khi thanh toán
     getPublicOrderDetails: async (orderId) => {
         if (!mongoose.Types.ObjectId.isValid(orderId)) {
             throw new Error("OrderId không hợp lệ");
@@ -256,7 +244,6 @@ const orderService = {
         }
     },
 
-    // Chuyển đổi phương thức thanh toán từ VNPay sang COD
     changePaymentMethod: async (orderId, newPaymentMethod) => {
         if (!mongoose.Types.ObjectId.isValid(orderId)) {
             throw new Error("OrderId không hợp lệ");
@@ -284,7 +271,6 @@ const orderService = {
                 throw new Error("Chỉ có thể chuyển đổi đơn hàng chưa thanh toán");
             }
 
-            // Cập nhật phương thức thanh toán
             payment.paymentMethod = newPaymentMethod;
             await payment.save({ session });
 
@@ -302,13 +288,10 @@ const orderService = {
         }
     },
 
-    // Tự động hủy đơn hàng VNPay quá hạn 24h
     autoExpireOrders: async () => {
         try {
             const expiryTime = new Date();
-            expiryTime.setHours(expiryTime.getHours() - 24); // 24h trước thời điểm hiện tại
-
-            // Tìm tất cả đơn hàng VNPay chưa thanh toán và được tạo trước thời điểm hết hạn
+            expiryTime.setHours(expiryTime.getHours() - 24);
             const payments = await Payment.find({
                 paymentMethod: 'VNPay',
                 paymentStatus: 'Pending',
@@ -320,8 +303,6 @@ const orderService = {
                 return { count: 0 };
             }
 
-            console.log(`Tìm thấy ${payments.length} đơn hàng VNPay quá hạn`);
-
             let cancelledCount = 0;
             for (const payment of payments) {
                 const session = await mongoose.startSession();
@@ -330,15 +311,12 @@ const orderService = {
                 try {
                     const order = await Order.findById(payment.orderId);
                     if (!order) {
-                        console.log(`Không tìm thấy đơn hàng cho payment ID: ${payment._id}`);
                         continue;
                     }
 
-                    // Cập nhật trạng thái đơn hàng thành "Cancelled"
                     order.shippingStatus = "Cancelled";
                     await order.save({ session });
 
-                    // Không xóa thông tin thanh toán, chỉ đánh dấu là hết hạn
                     payment.paymentStatus = "Expired";
                     await payment.save({ session });
 
@@ -364,7 +342,6 @@ const orderService = {
         }
     },
 
-    // Hàm cho phép người dùng hủy đơn hàng của họ
     cancelOrderByUser: async (userId, orderId) => {
         if (!mongoose.Types.ObjectId.isValid(orderId)) {
             throw new Error("OrderId không hợp lệ");
@@ -379,35 +356,28 @@ const orderService = {
                 throw new Error("Đơn hàng không tồn tại");
             }
 
-            // Kiểm tra xem đơn hàng có thuộc về người dùng không
             if (order.userId.toString() !== userId) {
                 throw new Error("Bạn không có quyền hủy đơn hàng này");
             }
 
-            // Chỉ cho phép hủy đơn hàng ở trạng thái Pending
             if (order.shippingStatus !== "Pending") {
                 throw new Error("Đơn hàng đã được xử lý, không thể hủy");
             }
 
-            // Cập nhật trạng thái đơn hàng thành Cancelled
             order.shippingStatus = "Cancelled";
             await order.save({ session });
 
-            // Cập nhật trạng thái thanh toán nếu đơn hàng là VNPay
             const payment = await Payment.findOne({ orderId });
             if (payment) {
                 if (payment.paymentMethod === "VNPay" && payment.paymentStatus === "Pending") {
-                    // Nếu chưa thanh toán thì đánh dấu hết hạn
                     payment.paymentStatus = "Expired";
                     await payment.save({ session });
                 } else if (payment.paymentMethod === "VNPay" && payment.paymentStatus === "Completed") {
-                    // Nếu đã thanh toán qua VNPay, tự động tạo yêu cầu hoàn tiền
                     try {
                         const result = await refundService.createRefundOnOrderCancel(orderId, payment, session);
                         console.log("Tạo yêu cầu hoàn tiền tự động:", result);
                     } catch (refundError) {
                         console.error("Lỗi khi tạo yêu cầu hoàn tiền tự động:", refundError);
-                        // Vẫn tiếp tục quy trình hủy đơn hàng ngay cả khi không tạo được yêu cầu hoàn tiền
                     }
                 }
             }

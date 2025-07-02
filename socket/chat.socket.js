@@ -22,22 +22,22 @@ const chatSocket = (io) => {
 
             connectedUsers.set(userId, socket.id);
 
-            // Store admin sockets separately for broadcasting
+            // Lưu socketId của admin vào adminSockets
             if (role === 'Admin') {
                 adminSockets.add(socket.id);
 
-                // Notify admin about online users
+                // Gửi danh sách tất cả user đang online về admin
                 socket.emit('onlineUsers', Array.from(connectedUsers.keys()));
                 console.log('Admin joined, connected users:', Array.from(connectedUsers.keys()));
             }
 
-            // Broadcast user online status to admins
+            // Gửi thông báo tới các admin
             adminSockets.forEach(adminSocketId => {
                 io.to(adminSocketId).emit('userOnline', userId);
             });
         });
 
-        // Send message
+        // client gửi tin nhắn
         socket.on('sendMessage', async (data) => {
             console.log('Message received:', data);
             try {
@@ -51,16 +51,15 @@ const chatSocket = (io) => {
                 }
 
                 const chat = await chatService.sendMessage(userId, sender, content, type);
-                console.log('Message saved to DB:', chat);
 
-                // Send to receiver if online
+                // Gửi tin nhắn đến người nhận nếu online
                 const receiverSocketId = connectedUsers.get(userId);
                 if (receiverSocketId) {
                     console.log('Sending to receiver:', receiverSocketId);
                     io.to(receiverSocketId).emit('newMessage', chat);
                 }
 
-                // If sender is user and there are admins online, notify them
+                // Nếu sender là User thi thông báo cho Admin
                 if (sender === 'User') {
                     adminSockets.forEach(adminSocketId => {
                         console.log('Notifying admin:', adminSocketId);
@@ -71,8 +70,7 @@ const chatSocket = (io) => {
                     });
                 }
 
-                // Send back to sender
-                console.log('Sending back to sender');
+                // Xác nhận lại với người gửi
                 socket.emit('messageSent', chat);
             } catch (error) {
                 console.error('Error in sendMessage:', error);
@@ -86,7 +84,6 @@ const chatSocket = (io) => {
             try {
                 const { userId, sender } = data;
 
-                // Kiểm tra userId hợp lệ
                 if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
                     console.error('Invalid userId in markAsRead event:', userId);
                     socket.emit('error', 'Invalid userId');
@@ -95,7 +92,7 @@ const chatSocket = (io) => {
 
                 const chat = await chatService.markAsRead(userId, sender);
 
-                // Notify other party that messages were read
+                // Gửi thông báo đã đọc cho phía còn lại
                 if (sender === 'Admin') {
                     const userSocketId = connectedUsers.get(userId);
                     if (userSocketId) {
@@ -120,7 +117,6 @@ const chatSocket = (io) => {
             console.log('User typing:', data);
             const { userId, isTyping, sender } = data;
 
-            // Kiểm tra userId hợp lệ
             if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
                 console.error('Invalid userId in typing event:', userId);
                 socket.emit('error', 'Invalid userId');
@@ -133,7 +129,6 @@ const chatSocket = (io) => {
                     io.to(userSocketId).emit('typing', { isTyping });
                 }
             } else {
-                // Notify admins
                 adminSockets.forEach(adminSocketId => {
                     io.to(adminSocketId).emit('typing', { userId, isTyping });
                 });
@@ -143,16 +138,16 @@ const chatSocket = (io) => {
         // Disconnect
         socket.on('disconnect', () => {
             console.log('Socket disconnected:', socket.id);
-            // Remove from admin sockets if it was an admin
+            // Gỡ socket.id khỏi adminSockets
             adminSockets.delete(socket.id);
 
-            // Find and remove user from connected users
+            // Tìm userId tương ứng trong connectedUsers và xóa khỏi map
             for (const [userId, socketId] of connectedUsers.entries()) {
                 if (socketId === socket.id) {
                     console.log('User disconnected:', userId);
                     connectedUsers.delete(userId);
 
-                    // Notify admins about user going offline
+                    // Gửi thông báo cho admin
                     adminSockets.forEach(adminSocketId => {
                         io.to(adminSocketId).emit('userOffline', userId);
                     });

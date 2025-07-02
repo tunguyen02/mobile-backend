@@ -1,6 +1,5 @@
 import dayjs from 'dayjs';
 
-// Sử dụng import động thay vì import tĩnh
 const loadPlugins = async () => {
     try {
         const utc = await import('dayjs/plugin/utc.js');
@@ -17,10 +16,8 @@ const loadPlugins = async () => {
     }
 };
 
-// Gọi hàm load plugins
 loadPlugins();
 
-// Hàm định dạng ngày tháng theo yêu cầu của VNPay không phụ thuộc vào plugins
 const formatVNPayDate = (date) => {
     const d = new Date(date);
     const year = d.getFullYear();

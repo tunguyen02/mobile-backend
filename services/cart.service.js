@@ -48,17 +48,14 @@ const cartService = {
         try {
             let cart = await cartService.getMyCart(userId);
 
-            // Kiểm tra sản phẩm đã tồn tại trong giỏ hàng chưa
             const productIndex = cart.products.findIndex(
                 (p) => p.product._id.toString() === productId
             );
 
             if (quantity > 0) {
                 if (productIndex >= 0) {
-                    // Nếu đã tồn tại, tăng số lượng        
                     cart.products[productIndex].quantity = quantity;
                 } else {
-                    // Nếu chưa tồn tại, thêm sản phẩm vào giỏ
                     cart.products.push({
                         product: productId,
                         quantity: quantity,
@@ -69,7 +66,6 @@ const cartService = {
                 cart.products.splice(productIndex, 1);
             }
 
-            // Cập nhật tổng giá
             cart.totalPrice = await priceService.calculateTotalPriceInCart(cart);
 
             await cart.save({ session });
@@ -100,29 +96,23 @@ const cartService = {
         try {
             let cart = await cartService.getMyCart(userId);
 
-            // Kiểm tra sản phẩm đã tồn tại trong giỏ hàng chưa
             const productIndex = cart.products.findIndex(
                 (p) => p.product._id.toString() === productId
             );
 
             if (productIndex >= 0) {
-                // Nếu đã tồn tại, tăng số lượng
                 cart.products[productIndex].quantity++;
             } else {
-                // Nếu chưa tồn tại, thêm sản phẩm vào giỏ
                 cart.products.push({
                     product: productId,
                     quantity: 1,
                 });
             }
 
-            // Nếu là sản phẩm flash sale, lưu thông tin
             if (flashSaleInfo) {
-                // Nếu chưa có flashSaleProducts trong cart, tạo mới
                 if (!cart.flashSaleProducts) {
                     cart.flashSaleProducts = {};
                 }
-                // Lưu thông tin Flash Sale
                 cart.flashSaleProducts[productId] = {
                     flashSaleId: flashSaleInfo.flashSaleId,
                     discountPrice: flashSaleInfo.discountPrice
@@ -131,7 +121,6 @@ const cartService = {
                 console.log("Updated Flash Sale Products in cart:", cart.flashSaleProducts);
             }
 
-            // Cập nhật tổng giá
             cart.totalPrice = await priceService.calculateTotalPriceInCart(cart);
 
             await cart.save({ session });

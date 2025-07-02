@@ -8,17 +8,14 @@ const upload = multer({ storage: storage });
 
 const ProductRouter = Router();
 
-// Route cho so sánh sản phẩm
 ProductRouter.post('/compare', productController.compareProducts);
 
-// Routes cho tìm sản phẩm theo tiêu chí
 ProductRouter.get('/find-by-price', productController.findProductsByPrice);
 ProductRouter.get('/find-by-camera', productController.findProductsByCamera);
 ProductRouter.get('/find-by-battery', productController.findProductsByBattery);
 ProductRouter.get('/find-by-series', productController.findProductsBySeries);
 ProductRouter.get('/find-by-storage', productController.findProductsByStorage);
 
-// Routes cho lấy danh sách các giá trị distinct
 ProductRouter.get('/distinct-camera-specs', productController.getDistinctCameraSpecs);
 ProductRouter.get('/distinct-battery-capacities', productController.getDistinctBatteryCapacities);
 ProductRouter.get('/distinct-storage-options', productController.getDistinctStorageOptions);

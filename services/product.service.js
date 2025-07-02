@@ -74,42 +74,34 @@ const productService = {
             let query = Product.find();
             let detailsQuery = {};
 
-            // Xử lý bộ lọc từ ProductDetails model
             if (battery || frontCamera || backCamera || storage || ram || os) {
                 // Xử lý lọc pin theo khoảng
                 if (battery && Array.isArray(battery) && battery.length > 0) {
-                    // Phân tích khoảng pin (vd: "3000-4000")
+
                     const batteryRange = battery[0].split('-');
                     const minBattery = parseInt(batteryRange[0]);
                     const maxBattery = batteryRange[1] ? parseInt(batteryRange[1]) : null;
 
-                    // Tìm các sản phẩm có dung lượng pin trong khoảng
-                    // Lấy tất cả thông tin pin từ DB
                     const allDetails = await ProductDetails.find({}, "pinAdapter.pinCapacity product");
                     const matchedProductIds = [];
 
                     allDetails.forEach(detail => {
                         if (detail.pinAdapter && detail.pinAdapter.pinCapacity) {
-                            // Trích xuất giá trị số từ chuỗi pin (ví dụ: "5000 mAh" -> 5000)
                             const pinCapacityStr = detail.pinAdapter.pinCapacity;
                             const pinCapacityMatch = pinCapacityStr.match(/(\d+)/);
 
                             if (pinCapacityMatch) {
                                 const pinCapacity = parseInt(pinCapacityMatch[0]);
 
-                                // Kiểm tra nếu pin thuộc khoảng đã chọn
                                 if (maxBattery) {
-                                    // Khoảng có max 
                                     if (pinCapacity >= minBattery && pinCapacity <= maxBattery) {
                                         matchedProductIds.push(detail.product);
                                     }
                                 } else if (minBattery === 0) {
-                                    // Dưới một giá trị 
                                     if (pinCapacity <= maxBattery) {
                                         matchedProductIds.push(detail.product);
                                     }
                                 } else {
-                                    // Trên một giá trị 
                                     if (pinCapacity >= minBattery) {
                                         matchedProductIds.push(detail.product);
                                     }
@@ -119,11 +111,9 @@ const productService = {
                     });
 
                     if (matchedProductIds.length > 0) {
-                        // Nếu chưa có điều kiện nào cho query, khởi tạo
                         if (!query._conditions._id) {
                             query.find({ _id: { $in: matchedProductIds } });
                         } else {
-                            // Nếu đã có điều kiện, kết hợp với điều kiện hiện tại
                             const existingIds = query._conditions._id.$in || [];
                             const combinedIds = existingIds.filter(id =>
                                 matchedProductIds.some(matchedId => matchedId.toString() === id.toString())
@@ -131,30 +121,25 @@ const productService = {
                             query.find({ _id: { $in: combinedIds } });
                         }
                     } else {
-                        // Không có kết quả phù hợp
                         query.find({ _id: { $in: [] } });
                     }
                 }
 
                 // Xử lý lọc camera trước theo khoảng
                 if (frontCamera && Array.isArray(frontCamera) && frontCamera.length > 0) {
-                    // Phân tích khoảng camera (vd: "12-20")
                     const cameraRange = frontCamera[0].split('-');
                     const minCamera = parseInt(cameraRange[0]);
                     const maxCamera = cameraRange[1] ? parseInt(cameraRange[1]) : null;
 
-                    // Tìm các sản phẩm có camera trong khoảng
                     const allDetails = await ProductDetails.find({}, "cameraDisplay.frontCamera product");
                     const matchedProductIds = [];
 
                     allDetails.forEach(detail => {
                         let hasMatchingCamera = false;
 
-                        // Hàm kiểm tra một chuỗi camera có phù hợp với khoảng không
                         const checkCameraString = (cameraStr) => {
                             if (!cameraStr) return false;
 
-                            // Tìm tất cả các giá trị MP trong chuỗi camera (ví dụ: "12MP + 8MP + 2MP")
                             const mpValues = [];
                             const regex = /(\d+)\s*(?:MP|megapixel)/gi;
                             let match;
@@ -162,26 +147,19 @@ const productService = {
                                 mpValues.push(parseInt(match[1]));
                             }
 
-                            // Nếu không tìm thấy giá trị MP nào, trả về false
                             if (mpValues.length === 0) return false;
 
-                            // Lấy giá trị MP lớn nhất để so sánh
                             const maxMpValue = Math.max(...mpValues);
 
-                            // Kiểm tra giá trị MP có thuộc khoảng đã chọn không
                             if (maxCamera) {
-                                // Khoảng có max 
                                 return maxMpValue >= minCamera && maxMpValue < maxCamera;
                             } else if (minCamera === 0) {
-                                // Dưới một giá trị 
                                 return maxMpValue < maxCamera;
                             } else {
-                                // Trên một giá trị 
                                 return maxMpValue >= minCamera;
                             }
                         };
 
-                        // Kiểm tra camera trước
                         if (detail.cameraDisplay && detail.cameraDisplay.frontCamera) {
                             if (checkCameraString(detail.cameraDisplay.frontCamera)) {
                                 hasMatchingCamera = true;
@@ -194,11 +172,9 @@ const productService = {
                     });
 
                     if (matchedProductIds.length > 0) {
-                        // Nếu chưa có điều kiện nào cho query, khởi tạo
                         if (!query._conditions._id) {
                             query.find({ _id: { $in: matchedProductIds } });
                         } else {
-                            // Nếu đã có điều kiện, kết hợp với điều kiện hiện tại
                             const existingIds = query._conditions._id.$in || [];
                             const combinedIds = existingIds.filter(id =>
                                 matchedProductIds.some(matchedId => matchedId.toString() === id.toString())
@@ -206,30 +182,25 @@ const productService = {
                             query.find({ _id: { $in: combinedIds } });
                         }
                     } else {
-                        // Không có kết quả phù hợp
                         query.find({ _id: { $in: [] } });
                     }
                 }
 
                 // Xử lý lọc camera sau theo khoảng
                 if (backCamera && Array.isArray(backCamera) && backCamera.length > 0) {
-                    // Phân tích khoảng camera 
                     const cameraRange = backCamera[0].split('-');
                     const minCamera = parseInt(cameraRange[0]);
                     const maxCamera = cameraRange[1] ? parseInt(cameraRange[1]) : null;
 
-                    // Tìm các sản phẩm có camera trong khoảng
                     const allDetails = await ProductDetails.find({}, "cameraDisplay.backCamera product");
                     const matchedProductIds = [];
 
                     allDetails.forEach(detail => {
                         let hasMatchingCamera = false;
 
-                        // Hàm kiểm tra một chuỗi camera có phù hợp với khoảng không
                         const checkCameraString = (cameraStr) => {
                             if (!cameraStr) return false;
 
-                            // Tìm tất cả các giá trị MP trong chuỗi camera 
                             const mpValues = [];
                             const regex = /(\d+)\s*(?:MP|megapixel)/gi;
                             let match;
@@ -237,26 +208,19 @@ const productService = {
                                 mpValues.push(parseInt(match[1]));
                             }
 
-                            // Nếu không tìm thấy giá trị MP nào, trả về false
                             if (mpValues.length === 0) return false;
 
-                            // Lấy giá trị MP lớn nhất để so sánh
                             const maxMpValue = Math.max(...mpValues);
 
-                            // Kiểm tra giá trị MP có thuộc khoảng đã chọn không
                             if (maxCamera) {
-                                // Khoảng có max (VD: 12-20)
                                 return maxMpValue >= minCamera && maxMpValue < maxCamera;
                             } else if (minCamera === 0) {
-                                // Dưới một giá trị (VD: 0-12)
                                 return maxMpValue < maxCamera;
                             } else {
-                                // Trên một giá trị (VD: 48-)
                                 return maxMpValue >= minCamera;
                             }
                         };
 
-                        // Kiểm tra camera sau
                         if (detail.cameraDisplay && detail.cameraDisplay.backCamera) {
                             if (checkCameraString(detail.cameraDisplay.backCamera)) {
                                 hasMatchingCamera = true;
@@ -269,11 +233,9 @@ const productService = {
                     });
 
                     if (matchedProductIds.length > 0) {
-                        // Nếu chưa có điều kiện nào cho query, khởi tạo
                         if (!query._conditions._id) {
                             query.find({ _id: { $in: matchedProductIds } });
                         } else {
-                            // Nếu đã có điều kiện, kết hợp với điều kiện hiện tại
                             const existingIds = query._conditions._id.$in || [];
                             const combinedIds = existingIds.filter(id =>
                                 matchedProductIds.some(matchedId => matchedId.toString() === id.toString())
@@ -281,12 +243,11 @@ const productService = {
                             query.find({ _id: { $in: combinedIds } });
                         }
                     } else {
-                        // Không có kết quả phù hợp
                         query.find({ _id: { $in: [] } });
                     }
                 }
 
-                // Tiếp tục xử lý các bộ lọc khác sử dụng detailsQuery
+                // Bộ lọc khác
                 let hasOtherFilters = false;
 
                 if (storage && Array.isArray(storage) && storage.length > 0) {
@@ -304,17 +265,14 @@ const productService = {
                     hasOtherFilters = true;
                 }
 
-                // Lấy danh sách sản phẩm từ ProductDetails dựa trên các bộ lọc khác
                 if (hasOtherFilters) {
                     const productDetails = await ProductDetails.find(detailsQuery);
                     const productIds = productDetails.map(detail => detail.product);
 
                     if (productIds.length > 0) {
-                        // Nếu chưa có điều kiện nào cho query, khởi tạo
                         if (!query._conditions._id) {
                             query.find({ _id: { $in: productIds } });
                         } else {
-                            // Nếu đã có điều kiện, kết hợp với điều kiện hiện tại
                             const existingIds = query._conditions._id.$in || [];
                             const combinedIds = existingIds.filter(id =>
                                 productIds.some(matchedId => matchedId.toString() === id.toString())
@@ -322,7 +280,6 @@ const productService = {
                             query.find({ _id: { $in: combinedIds } });
                         }
                     } else if (hasOtherFilters) {
-                        // Không có kết quả phù hợp
                         query.find({ _id: { $in: [] } });
                     }
                 }
@@ -339,7 +296,7 @@ const productService = {
                 query.find({ brand: { $in: brandIds } });
             }
 
-            // Xử lý lọc theo khoảng giá
+            // lọc theo khoảng giá
             if (priceRange) {
                 const [minPrice, maxPrice] = priceRange.split('-').map(price => parseInt(price));
                 if (!isNaN(minPrice) && !isNaN(maxPrice)) {
@@ -474,11 +431,9 @@ const productService = {
     // Tìm sản phẩm theo khoảng giá
     findProductsByPriceRange: async (targetPrice, range = 2000000, limit = 4) => {
         try {
-            // Tính khoảng giá dựa trên giá mục tiêu
             const minPrice = Math.max(0, targetPrice - range);
             const maxPrice = targetPrice + range;
 
-            // Lấy thông tin flash sale đang hoạt động
             const now = new Date();
             const flashSales = await FlashSale.find({
                 isActive: true,
@@ -486,7 +441,6 @@ const productService = {
                 endTime: { $gte: now }
             });
 
-            // Tạo map sản phẩm flash sale
             const flashSaleMap = {};
             flashSales.forEach(flashSale => {
                 flashSale.products.forEach(product => {
@@ -503,22 +457,19 @@ const productService = {
                 });
             });
 
-            // Lấy tất cả sản phẩm
             const allProducts = await Product.find().populate('brand');
 
-            // Tạo một mảng tất cả sản phẩm với giá thích hợp (giá gốc hoặc giá Flash Sale)
             const productsWithPrices = allProducts.map(product => {
                 const productId = product._id.toString();
                 const productObj = product.toObject();
 
-                // Kiểm tra xem sản phẩm có trong Flash Sale không
                 if (flashSaleMap[productId]) {
                     const flashSalePrice = flashSaleMap[productId].discountPrice;
                     return {
                         ...productObj,
                         originalPrice: productObj.price,
-                        displayPrice: flashSalePrice, // Giá hiển thị (để so sánh)
-                        price: flashSalePrice, // Cập nhật giá thực tế
+                        displayPrice: flashSalePrice,
+                        price: flashSalePrice,
                         isFlashSale: true,
                         isOnSale: true,
                         discountPercent: Math.round((1 - flashSalePrice / productObj.price) * 100)
@@ -527,16 +478,14 @@ const productService = {
 
                 return {
                     ...productObj,
-                    displayPrice: productObj.price // Sử dụng giá gốc cho sản phẩm không trong Flash Sale
+                    displayPrice: productObj.price
                 };
             });
 
-            // Lọc các sản phẩm trong khoảng giá theo giá hiển thị
             const productsInRange = productsWithPrices.filter(product =>
                 product.displayPrice >= minPrice && product.displayPrice <= maxPrice
             );
 
-            // Sắp xếp theo sự gần gũi với giá mục tiêu
             const sortedProducts = productsInRange.sort((a, b) => {
                 const distanceA = Math.abs(a.displayPrice - targetPrice);
                 const distanceB = Math.abs(b.displayPrice - targetPrice);
@@ -553,7 +502,6 @@ const productService = {
     // Tìm sản phẩm theo camera
     findProductsByCamera: async (cameraSpec, limit = 4) => {
         try {
-            // Tìm thông tin chi tiết sản phẩm có thông số camera tương tự
             const productDetails = await ProductDetails.find({
                 $or: [
                     { "cameraDisplay.frontCamera": { $regex: cameraSpec, $options: 'i' } },
@@ -563,10 +511,8 @@ const productService = {
                 .populate('product')
                 .limit(limit);
 
-            // Lấy ID sản phẩm từ chi tiết sản phẩm
             const productIds = productDetails.map(detail => detail.product._id);
 
-            // Lấy thông tin đầy đủ của sản phẩm
             const products = await Product.find({ _id: { $in: productIds } })
                 .populate('brand');
 
@@ -577,20 +523,16 @@ const productService = {
         }
     },
 
-    // Tìm sản phẩm theo dung lượng pin
     findProductsByBatteryCapacity: async (batteryCapacity, limit = 4) => {
         try {
-            // Tìm thông tin chi tiết sản phẩm có dung lượng pin tương tự
             const productDetails = await ProductDetails.find({
                 "pinAdapter.pinCapacity": { $regex: batteryCapacity, $options: 'i' }
             })
                 .populate('product')
                 .limit(limit);
 
-            // Lấy ID sản phẩm từ chi tiết sản phẩm
             const productIds = productDetails.map(detail => detail.product._id);
 
-            // Lấy thông tin đầy đủ của sản phẩm
             const products = await Product.find({ _id: { $in: productIds } })
                 .populate('brand');
 
@@ -604,13 +546,9 @@ const productService = {
     // Tìm sản phẩm cùng loại
     findProductsBySeries: async (productName, limit = 4) => {
         try {
-            // Tìm sản phẩm có tên tương tự (cùng series)
-            // Ví dụ: iPhone 12, iPhone 13, Samsung Galaxy S21, etc.
             const nameParts = productName.split(' ');
             let seriesName = '';
 
-            // Cố gắng tìm tên series từ tên sản phẩm
-            // Ví dụ: "iPhone 12 Pro Max" -> "iPhone 12"
             if (nameParts.length >= 2) {
                 seriesName = `${nameParts[0]} ${nameParts[1]}`;
             } else {
@@ -633,17 +571,14 @@ const productService = {
     // Tìm sản phẩm theo dung lượng bộ nhớ
     findProductsByStorage: async (storage, limit = 4) => {
         try {
-            // Tìm thông tin chi tiết sản phẩm có dung lượng bộ nhớ tương tự
             const productDetails = await ProductDetails.find({
                 "specifications.storage": { $regex: storage, $options: 'i' }
             })
                 .populate('product')
                 .limit(limit);
 
-            // Lấy ID sản phẩm từ chi tiết sản phẩm
             const productIds = productDetails.map(detail => detail.product._id);
 
-            // Lấy thông tin đầy đủ của sản phẩm
             const products = await Product.find({ _id: { $in: productIds } })
                 .populate('brand');
 
@@ -689,11 +624,9 @@ const productService = {
         try {
             const capacities = await ProductDetails.distinct('pinAdapter.pinCapacity');
 
-            // Lọc và sắp xếp các giá trị hợp lệ
             const validCapacities = capacities
                 .filter(capacity => capacity && capacity.trim() !== '')
                 .sort((a, b) => {
-                    // Trích xuất số từ chuỗi (ví dụ: "5000mAh" -> 5000)
                     const numA = parseInt(a.replace(/[^0-9]/g, '')) || 0;
                     const numB = parseInt(b.replace(/[^0-9]/g, '')) || 0;
                     return numA - numB;
@@ -711,11 +644,9 @@ const productService = {
         try {
             const storageOptions = await ProductDetails.distinct('specifications.storage');
 
-            // Lọc và sắp xếp các giá trị hợp lệ
             const validOptions = storageOptions
                 .filter(option => option && option.trim() !== '')
                 .sort((a, b) => {
-                    // Trích xuất số từ chuỗi (ví dụ: "128GB" -> 128)
                     const numA = parseInt(a.replace(/[^0-9]/g, '')) || 0;
                     const numB = parseInt(b.replace(/[^0-9]/g, '')) || 0;
                     return numA - numB;
@@ -731,25 +662,19 @@ const productService = {
     // Lấy danh sách các series sản phẩm distinct
     getDistinctProductSeries: async () => {
         try {
-            // Lấy tất cả sản phẩm
             const products = await Product.find({}, 'name');
 
-            // Xử lý tên sản phẩm để trích xuất series
             const seriesMap = new Map();
 
             products.forEach(product => {
                 if (product.name) {
-                    // Phân tích tên sản phẩm để lấy series
-                    // Ví dụ: "iPhone 12 Pro Max" -> "iPhone 12"
                     const nameParts = product.name.split(' ');
                     let seriesName = '';
 
                     if (nameParts.length >= 2) {
-                        // Xử lý cho iPhone
                         if (nameParts[0].toLowerCase().includes('iphone')) {
                             seriesName = `${nameParts[0]} ${nameParts[1]}`;
                         }
-                        // Xử lý cho Samsung Galaxy
                         else if (nameParts[0].toLowerCase().includes('samsung') &&
                             nameParts[1].toLowerCase().includes('galaxy')) {
                             if (nameParts.length >= 3) {
@@ -758,7 +683,6 @@ const productService = {
                                 seriesName = `${nameParts[0]} ${nameParts[1]}`;
                             }
                         }
-                        // Xử lý cho các hãng khác
                         else {
                             seriesName = `${nameParts[0]} ${nameParts[1]}`;
                         }
@@ -768,7 +692,6 @@ const productService = {
                 }
             });
 
-            // Chuyển đổi Map thành mảng và sắp xếp
             const seriesList = Array.from(seriesMap.keys()).sort();
 
             return seriesList;

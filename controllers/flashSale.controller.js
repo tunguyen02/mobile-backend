@@ -3,7 +3,6 @@ import flashSaleService from '../services/flashSale.service.js';
 const flashSaleController = {
     createFlashSale: async (req, res) => {
         try {
-            console.log('Creating flash sale with data:', JSON.stringify(req.body, null, 2));
             const flashSale = await flashSaleService.createFlashSale(req.body);
 
             res.status(201).json({

@@ -5,7 +5,6 @@ import mongoose from 'mongoose';
 const reviewService = {
     createReview: async (userId, productId, orderId, data) => {
         try {
-            // Kiểm tra đơn hàng tồn tại và thuộc về user
             const order = await Order.findOne({
                 _id: orderId,
                 userId: userId
@@ -15,12 +14,10 @@ const reviewService = {
                 throw new Error('Order not found or not authorized');
             }
 
-            // Kiểm tra đơn hàng đã giao thành công chưa
             if (order.shippingStatus !== 'Completed') {
                 throw new Error('Bạn chỉ có thể đánh giá sản phẩm sau khi đơn hàng được giao thành công');
             }
 
-            // Kiểm tra sản phẩm có trong đơn hàng không
             const productInOrder = order.products.find(
                 item => item.product.toString() === productId
             );
@@ -29,7 +26,6 @@ const reviewService = {
                 throw new Error('Product not found in this order');
             }
 
-            // Kiểm tra đã review sản phẩm này chưa
             const existingReview = await Review.findOne({
                 user: userId,
                 product: productId,
@@ -65,7 +61,6 @@ const reviewService = {
 
             const total = await Review.countDocuments({ product: productId });
 
-            // Tính rating trung bình
             const averageRating = await Review.aggregate([
                 { $match: { product: new mongoose.Types.ObjectId(productId) } },
                 { $group: { _id: null, average: { $avg: "$rating" } } }
@@ -123,10 +118,9 @@ const reviewService = {
             throw new Error(error.message);
         }
     },
-    
+
     checkReviewStatus: async (userId, productId, orderId) => {
         try {
-            // Kiểm tra đơn hàng tồn tại và thuộc về user
             const order = await Order.findOne({
                 _id: orderId,
                 userId: userId
@@ -136,12 +130,10 @@ const reviewService = {
                 throw new Error('Order not found or not authorized');
             }
 
-            // Kiểm tra đơn hàng đã giao thành công chưa
             if (order.shippingStatus !== 'Completed') {
                 return { hasReviewed: false, canReview: false };
             }
 
-            // Kiểm tra đã review sản phẩm này chưa
             const existingReview = await Review.findOne({
                 user: userId,
                 product: productId,
@@ -153,10 +145,9 @@ const reviewService = {
             throw new Error(error.message);
         }
     },
-    
+
     checkUserCanReview: async (userId, productId) => {
         try {
-            // Kiểm tra xem người dùng đã có đơn hàng đã giao nào chứa sản phẩm này chưa
             const completedOrders = await Order.find({
                 userId: userId,
                 shippingStatus: 'Completed',
@@ -167,10 +158,8 @@ const reviewService = {
                 return { canReview: false, hasReviewed: false };
             }
 
-            // Lấy tất cả orderId từ các đơn hàng đã hoàn thành
             const orderIds = completedOrders.map(order => order._id);
 
-            // Kiểm tra xem đã có đánh giá nào từ người dùng cho sản phẩm này chưa
             const existingReview = await Review.findOne({
                 user: userId,
                 product: productId,
@@ -178,17 +167,16 @@ const reviewService = {
             }).populate('order', 'orderNumber');
 
             if (existingReview) {
-                return { 
-                    canReview: false, 
-                    hasReviewed: true, 
+                return {
+                    canReview: false,
+                    hasReviewed: true,
                     reviewId: existingReview._id,
                     orderId: existingReview.order._id
                 };
             }
 
-            // Nếu chưa có đánh giá, trả về đơn hàng đầu tiên để đánh giá
-            return { 
-                canReview: true, 
+            return {
+                canReview: true,
                 hasReviewed: false,
                 orderId: orderIds[0]
             };
@@ -196,10 +184,9 @@ const reviewService = {
             throw new Error(error.message);
         }
     },
-    
+
     getUserProductReview: async (userId, productId) => {
         try {
-            // Tìm đánh giá của người dùng cho sản phẩm
             const review = await Review.findOne({
                 user: userId,
                 product: productId

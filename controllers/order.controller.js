@@ -25,11 +25,7 @@ const orderController = {
         try {
             const newData = await orderService.createOrder(userId, shippingInfo, paymentMethod, cartWithFlashSale);
 
-            // Gửi email xác nhận đơn hàng
             try {
-                console.log('Sending order confirmation email for order:', newData.newOrder._id);
-                console.log('Order products:', JSON.stringify(newData.newOrder.products, null, 2));
-                console.log('Customer email:', email);
                 await sendCreateOrderEmail(newData.newOrder, email);
                 console.log('Order confirmation email sent successfully');
             } catch (emailError) {
@@ -242,7 +238,6 @@ const orderController = {
                 });
             }
 
-            // Kiểm tra đơn hàng có tồn tại và thuộc về người dùng không
             const orderDetails = await orderService.getOrderDetails(userId, orderId);
             if (!orderDetails || !orderDetails.order) {
                 return res.status(404).json({
@@ -251,7 +246,6 @@ const orderController = {
                 });
             }
 
-            // Kiểm tra đơn hàng có phải VNPay và đang ở trạng thái pending không
             if (orderDetails.payment?.paymentMethod !== 'VNPay' ||
                 orderDetails.payment?.paymentStatus !== 'Pending') {
                 return res.status(400).json({
@@ -260,7 +254,6 @@ const orderController = {
                 });
             }
 
-            // Kiểm tra đơn hàng còn trong thời hạn 24h không
             const orderDate = new Date(orderDetails.order.createdAt);
             const expiryDate = new Date(orderDate.getTime() + 24 * 60 * 60 * 1000);
             const now = new Date();
@@ -272,7 +265,6 @@ const orderController = {
                 });
             }
 
-            // Cập nhật phương thức thanh toán
             const result = await orderService.changePaymentMethod(orderId, paymentMethod);
 
             return res.status(200).json({
@@ -307,9 +299,7 @@ const orderController = {
         try {
             const result = await orderService.cancelOrderByUser(userId, orderId);
 
-            // Kiểm tra nếu đơn hàng đã thanh toán qua VNPay, trả về thông tin hoàn tiền
             if (result.success) {
-                // Tìm thông tin hoàn tiền nếu có
                 const refundInfo = await Refund.findOne({ orderId }).lean();
 
                 return res.status(200).json({
