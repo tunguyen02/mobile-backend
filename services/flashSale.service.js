@@ -148,32 +148,35 @@ const flashSaleService = {
         }
     },
 
-    updateSoldCount: async (flashSaleId, productId, quantity) => {
+    updateSoldCount: async (flashSaleId, productId, quantityToDecrement) => {
         try {
-            const flashSale = await FlashSale.findById(flashSaleId);
-            if (!flashSale) {
-                throw new Error('Flash sale not found');
-            }
-
-            const productIndex = flashSale.products.findIndex(
-                item => item.product.toString() === productId
+            const updatedFlashSale = await FlashSale.findOneAndUpdate(
+                {
+                    _id: flashSaleId,
+                    'products.product': productId,
+                    // Điều kiện cốt lõi: Đảm bảo không bán vượt số lượng
+                    // Chỉ tìm và cập nhật document nếu biểu thức này đúng
+                    $expr: { $gte: ["$products.$[elem].quantity", { $add: ["$products.$[elem].soldCount", quantityToDecrement] }] }
+                },
+                {
+                    // Tăng soldCount một cách nguyên tử
+                    $inc: { 'products.$[elem].soldCount': quantityToDecrement }
+                },
+                {
+                    new: true, // Trả về document sau khi đã cập nhật
+                    arrayFilters: [{ 'elem.product': productId }]
+                }
             );
 
-            if (productIndex === -1) {
-                throw new Error('Product not found in flash sale');
+            if (!updatedFlashSale) {
+                // Nếu không tìm thấy document nào thoả mãn, có nghĩa là đã hết hàng
+                throw new Error('Insufficient quantity in flash sale or product not found.');
             }
 
-            const product = flashSale.products[productIndex];
-            if (product.soldCount + quantity > product.quantity) {
-                throw new Error('Insufficient quantity in flash sale');
-            }
-
-            product.soldCount += quantity;
-            await flashSale.save();
-
-            return flashSale;
+            return updatedFlashSale;
         } catch (error) {
-            throw new Error(error.message);
+            // Ném lỗi để controller có thể bắt và xử lý
+            throw error;
         }
     }
 };

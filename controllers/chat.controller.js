@@ -55,6 +55,32 @@ const chatController = {
         }
     },
 
+    getNewMessages: async (req, res) => {
+        try {
+            const { userId } = req.params;
+            const { timestamp } = req.query;
+
+            if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid userId'
+                });
+            }
+
+            const chat = await chatService.getNewMessages(userId, timestamp);
+
+            res.status(200).json({
+                success: true,
+                data: chat
+            });
+        } catch (error) {
+            res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+    },
+
     markAsRead: async (req, res) => {
         try {
             const { userId } = req.params;

@@ -173,6 +173,12 @@ const refundService = {
             const payment = await Payment.findById(refund.paymentId);
             payment.paymentStatus = "Completed";
 
+            const order = await Order.findById(refund.orderId);
+            if (order && order.shippingStatus === "Cancelled") {
+                order.shippingStatus = "Processing";
+                await order.save({ session });
+            }
+
             await refund.save({ session });
             await payment.save({ session });
 

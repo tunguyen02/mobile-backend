@@ -100,10 +100,14 @@ const refundController = {
 
             const refund = await refundService.approveRefund(refundId, adminNote || "Đã phê duyệt");
 
+            // Lấy thông tin đơn hàng để trả về trạng thái
+            const order = await Order.findById(refund.orderId).select("shippingStatus");
+
             return res.status(200).json({
                 success: true,
                 message: "Đã phê duyệt yêu cầu hoàn tiền",
-                refund
+                refund,
+                orderStatus: order.shippingStatus
             });
         } catch (error) {
             console.error("Lỗi khi phê duyệt hoàn tiền:", error);
@@ -128,10 +132,14 @@ const refundController = {
 
             const refund = await refundService.rejectRefund(refundId, reason);
 
+            // Lấy thông tin đơn hàng để trả về trạng thái mới
+            const order = await Order.findById(refund.orderId).select("shippingStatus");
+
             return res.status(200).json({
                 success: true,
-                message: "Đã từ chối yêu cầu hoàn tiền",
-                refund
+                message: "Đã từ chối yêu cầu hoàn tiền và chuyển đơn hàng sang trạng thái xử lý",
+                refund,
+                orderStatus: order.shippingStatus
             });
         } catch (error) {
             console.error("Lỗi khi từ chối hoàn tiền:", error);

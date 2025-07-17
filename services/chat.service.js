@@ -70,6 +70,34 @@ const chatService = {
         }
     },
 
+    getNewMessages: async (userId, timestamp) => {
+        try {
+            if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+                throw new Error("Invalid userId");
+            }
+
+            const chat = await Chat.findOne({ userId })
+                .populate('userId', 'name email');
+
+            if (!chat) return null;
+
+            if (timestamp) {
+                const compareTime = new Date(timestamp);
+
+                const filteredChat = {
+                    ...chat.toObject(),
+                    messages: chat.messages.filter(msg => new Date(msg.createdAt) > compareTime)
+                };
+
+                return filteredChat;
+            }
+
+            return chat;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    },
+
     markAsRead: async (userId, sender) => {
         try {
             if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {

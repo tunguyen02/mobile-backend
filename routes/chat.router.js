@@ -6,6 +6,7 @@ const ChatRouter = Router();
 
 ChatRouter.post('/send/:userId', authMiddleware.protect, chatController.sendMessage);
 ChatRouter.get('/messages/:userId', authMiddleware.protect, chatController.getMessages);
+ChatRouter.get('/new-messages/:userId', authMiddleware.protect, chatController.getNewMessages);
 ChatRouter.put('/mark-read/:userId', authMiddleware.protect, chatController.markAsRead);
 ChatRouter.put('/status/:userId', authMiddleware.protect, chatController.updateStatus);
 ChatRouter.get('/unread/:userId', authMiddleware.protect, chatController.getUnreadCount);
